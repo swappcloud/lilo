@@ -43,9 +43,13 @@ export function privacyBuildEnvironment(input, home = homedir(), root = process.
 export function assertPrivateDataAbsent(data, forbiddenPaths = []) {
   const texts = [data.toString("utf8"), data.toString("utf16le")];
   for (const text of texts) {
-    if (forbiddenPaths.filter(Boolean).some((path) => text.includes(path)) ||
-      /(?:\/Users\/|\/home\/|[A-Za-z]:[\\/]Users[\\/])[^/\\\s\0<>]+/.test(text)) {
-      throw new Error("Release privacy check failed: machine path");
+    const forbiddenIndex = forbiddenPaths.findIndex((path) => path && text.includes(path));
+    if (forbiddenIndex >= 0) {
+      const category = forbiddenIndex === 0 ? "toolchain home" : "workspace";
+      throw new Error(`Release privacy check failed: machine path (${category})`);
+    }
+    if (/(?:\/Users\/|\/home\/|[A-Za-z]:[\\/]Users[\\/])[^/\\\s\0<>]+/.test(text)) {
+      throw new Error("Release privacy check failed: machine path (user profile)");
     }
     if (/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{50,}|sk-(?:proj-|ant-)?[A-Za-z0-9_-]{35,}|AKIA[A-Z0-9]{16})\b/.test(text)) {
       throw new Error("Release privacy check failed: credential");

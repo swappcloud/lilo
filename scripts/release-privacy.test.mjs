@@ -72,11 +72,13 @@ test("privacy gate rejects UTF-8 and UTF-16 machine paths without revealing valu
   const privatePath = "/Users/Build User/project/source.rs";
   for (const encoding of ["utf8", "utf16le"]) {
     assert.throws(() => assertPrivateDataAbsent(Buffer.from(privatePath, encoding), ["/Users/Build User"]), (error) => {
-      assert.equal(error.message, "Release privacy check failed: machine path");
+      assert.equal(error.message, "Release privacy check failed: machine path (toolchain home)");
       assert.ok(!error.message.includes("Build User"));
       return true;
     });
   }
+  assert.throws(() => assertPrivateDataAbsent(Buffer.from("D:/runner/work/project"), ["C:/Users/Runner", "D:/runner/work/project"]),
+    /machine path \(workspace\)/);
   assert.doesNotThrow(() => assertPrivateDataAbsent(Buffer.from("/lilo-build/project/source.rs"), ["/Users/Build User"]));
 });
 
