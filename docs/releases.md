@@ -32,7 +32,7 @@ Build on the corresponding OS. Explicit targets put bundles in
 ## GitHub Actions
 
 `.github/workflows/release-build.yml` checks `main` once daily at 02:00 UTC.
-Pushes, pull requests and manual dispatch do not trigger it. GitHub can delay
+Pushes and pull requests do not trigger it; use the Actions tab to start a manual release run. GitHub can delay
 scheduled starts; this is not an exact wall-clock timer. The planning job skips
 native builds when the same main commit has a complete published release.
 Incomplete publication is retried at the next scheduled run.

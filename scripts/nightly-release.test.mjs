@@ -50,11 +50,12 @@ test("a disposable checkout gets matching versions and valid notes without touch
   assert.match(files["CHANGELOG.md"], /## \[0\.1\.4\]/);
   assert.equal(writes.some((file) => file.endsWith(".lock") || file.includes("lock.json")), false);
 });
-test("workflow is schedule-only and uses release-profile tests before installer publication", async () => {
+test("workflow supports scheduled and manual releases with release-profile tests", async () => {
   const { readFile } = await import("node:fs/promises");
   const workflow = await readFile(new URL("../.github/workflows/release-build.yml", import.meta.url), "utf8");
   assert.match(workflow, /schedule:\s*\n\s*- cron: '0 2 \* \* \*'/);
-  assert.doesNotMatch(workflow, /^\s*(?:push|pull_request|workflow_dispatch):/m);
+  assert.match(workflow, /^\s*workflow_dispatch:/m);
+  assert.doesNotMatch(workflow, /^\s*(?:push|pull_request):/m);
   assert.match(workflow, /node scripts\/nightly-release\.mjs/);
   assert.match(workflow, /node scripts\/release-test\.mjs/);
   assert.doesNotMatch(workflow, /run: cargo test --workspace\s*$/m);

@@ -89,7 +89,10 @@ asks for short checks every few minutes, specific praise and a session recap.
 Reminders take place inside explicitly started study, with no background
 notifications or unsolicited recording. The chart counts recorded learner
 turns and checkpoints, not speaking minutes. Daily totals survive transcript
-compaction and revisions. The streak covers the last 28 days and allows the
+compaction and revisions. A nonzero practice chart can coexist with zero task
+evidence: turns are captured separately, while skill coverage requires a
+matching tutor checkpoint. Providers may omit those spoken checkpoints,
+leaving skill bars unassessed. The streak covers the last 28 days and allows the
 learner to continue today's practice before the day ends.
 
 Each language retains at most 480 task observations and 600 word attempts;

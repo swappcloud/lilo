@@ -264,7 +264,7 @@ builds, starts, stops and checks isolated local runtimes and prepares offline im
 - `scripts/desktop-plugin.test.mjs` — desktop plugin contract, scoped dispatch, private results and headless loading checks.
 - `scripts/release-privacy.mjs` / `release-privacy.test.mjs` — anonymized compiler paths and installer privacy gate, validated before publishing artifacts.
 
-- `.github/workflows/release-build.yml` — runs daily at 02:00 UTC, skips fully released unchanged main, shares one frontend build and publishes only after all native targets pass. Pushes, PRs and manual dispatch do not trigger it. Local builds and distribution checks: `docs/releases.md`.
+- `.github/workflows/release-build.yml` — runs daily at 02:00 UTC, skips fully released unchanged main, shares one frontend build and publishes only after all native targets pass. Pushes and PRs do not trigger it; use the Actions tab for a manual run. Local builds and distribution checks: `docs/releases.md`.
 - `src-tauri/capabilities/grok-voice.json` — the Grok webview may report voice events only.
 
 Phone verification regression tests: `app/src/providers/shared/phoneChallenge.test.ts` exercises invisible widgets and visible interactive challenges from the shared injected form driver.

@@ -412,6 +412,7 @@ html[data-os="macos"] .settings-overlay {
 .plugin-chart-table summary { cursor: pointer; }
 .plugin-chart-table table { width: 100%; border-collapse: collapse; margin-top: var(--space-3); }
 .plugin-chart-table td, .plugin-chart-table th { text-align: left; padding: var(--space-1) var(--space-1); font-weight: normal; }
+.plugin-chart-table th { white-space: nowrap; }
 .plugin-journey-highlights { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--space-3); }
 .plugin-journey-highlights > div { padding: var(--space-4); border-radius: 12px; background: var(--bg2); }
 .plugin-journey-highlights strong { display: block; margin-bottom: var(--space-2); font-size: 12px; }

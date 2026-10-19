@@ -35,7 +35,8 @@ pub fn default_marketplace_url() -> String {
 pub const REPO_MARKETPLACE_URL: &str =
     "https://raw.githubusercontent.com/swappcloud/lilo/main/examples/plugins";
 
-const RETIRED_MARKETPLACE_URL: &str = "https://raw.githubusercontent.com/lilo-app/plugins/main";
+const MISCONFIGURED_MARKETPLACE_URL: &str =
+    "https://raw.githubusercontent.com/lilo/plugins/main";
 
 /// Development uses only the workspace examples, even with a saved URL.
 /// Packaged apps use the configured source, or the repository followed by the
@@ -49,7 +50,7 @@ pub fn marketplace_sources(
         return vec![directory.to_string_lossy().into_owned()];
     }
     let trimmed = configured.trim().trim_end_matches('/');
-    if trimmed.is_empty() || trimmed == RETIRED_MARKETPLACE_URL {
+    if trimmed.is_empty() || trimmed == MISCONFIGURED_MARKETPLACE_URL {
         vec![
             REPO_MARKETPLACE_URL.to_string(),
             bundled.to_string_lossy().into_owned(),
@@ -210,7 +211,7 @@ mod tests {
         assert_eq!(marketplace_sources("  ", bundled, None), default);
         assert_eq!(
             marketplace_sources(
-                "https://raw.githubusercontent.com/lilo-app/plugins/main/",
+                "https://raw.githubusercontent.com/lilo/plugins/main/",
                 bundled,
                 None,
             ),
@@ -232,7 +233,7 @@ mod tests {
         for configured in [
             "",
             REPO_MARKETPLACE_URL,
-            RETIRED_MARKETPLACE_URL,
+            MISCONFIGURED_MARKETPLACE_URL,
             "https://example.com/market/",
         ] {
             assert_eq!(

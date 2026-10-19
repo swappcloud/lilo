@@ -74,6 +74,15 @@ test("daily counts survive caption compaction and revisions; dashboard reads do 
   assert.equal(context.invoke("study_dashboard",{}).dashboard.series[0].points.at(-1).value,50);
   context.invoke("study_words",{});context.invoke("study_next",{});context.invoke("study_context",{});assert.deepEqual(files,before);
 });
+test("dashboard explains captured practice when tutor skill checkpoints are missing",()=>{
+ const {context}=plugin();context.invoke("study_start",{language:"Italian"});const at=Date.now();
+ turn(context,"lesson-0","learner-1","user","Practice",at);
+ const dashboard=context.invoke("study_dashboard",{}).dashboard;
+ assert.equal(dashboard.series[0].points.at(-1).value,1);
+ assert.equal(dashboard.series[1].points.at(-1).value,0);
+ const pending=dashboard.highlights.find((item)=>item.label==="Skill checkpoints pending");
+ assert.match(pending?.detail??"",/practice turns are counted/i);
+});
 test("unlinked or malformed tutor claims do not become assessments and arbitrary vocabulary keys are safe",()=>{
   const {context}=plugin();context.invoke("study_start",{language:"Italian"});const at=Date.now();
   turn(context,"unlinked","1","assistant","Study checkpoint: conversation B1 1 3; evidence: no learner attempt; audio: none.",at);
