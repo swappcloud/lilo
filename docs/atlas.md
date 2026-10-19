@@ -251,7 +251,7 @@ builds, starts, stops and checks isolated local runtimes and prepares offline im
   product notes: `language-study.md`, `design-system.md`, `tool-calling-plan.md` (proposed).
 - `examples/plugins/` — `hello`, `history`, `gallery`, `notes`, `pomodoro`, `dictionary` (free English lookup and offline vocabulary), `study`, `language-es` (partial translation starter), `desktop` (opt-in app launch and literal dictation), `screen` + `index.json`
   (rebuild with `scripts/build-marketplace.sh`).
-- `scripts/` — `dev.mjs`, `build.mjs`, `prepare-release.mjs`, `setup.mjs`, `build-wake.sh`,
+- `scripts/` — `dev.mjs`, `build.mjs`, `prepare-release.mjs`, `setup.mjs`, `build-wake.sh`, `ci-platform-tests.mjs` (selects native PR checks by changed paths),
   `build-marketplace.sh` (POSIX wrapper), `build-marketplace.mjs` (cross-platform catalog builder), `test-linux.sh`, `pi-sim.sh`; release CI: `release-plan.mjs` (shared version and target definitions),
   `nightly-release.mjs` / `nightly-release.test.mjs` (daily changed-main planning and disposable checkout versions), `release-test.mjs` (release-profile workspace tests), `release-publish.mjs`, `update-artifacts.mjs` (signed payloads, build validation CLI and manifest merge), `changelog.mjs` (version-specific notes), `bump-version.mjs` (`npm run version:bump`),
   `check-version.mjs` (shared version validation before development and installer builds). Release notes live in `CHANGELOG.md`; update translations in `app/src/i18n/messages/updates.ts`.

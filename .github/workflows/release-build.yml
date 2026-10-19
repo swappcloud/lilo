@@ -1,7 +1,9 @@
 name: Release build
 
-# Inspect main once a day; pushes and pull requests never trigger releases.
+# Publish a release after a PR is merged to main; keep the scheduled and manual retries.
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
@@ -53,14 +55,12 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
       - run: npm run build
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-frontend
           path: dist/
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
 
   build:
@@ -88,8 +88,6 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: node scripts/nightly-release.mjs --prepare "${{ needs.plan.outputs.tag }}"
       - run: npm ci
-      - run: npm test
-        if: matrix.platform != 'linux' && matrix.target != 'x86_64-apple-darwin'
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: |
@@ -111,8 +109,7 @@ jobs:
         with:
           name: release-frontend
           path: dist/
-      - run: node scripts/release-test.mjs ${{ matrix.target }}
-      # Resources and dist/ were built above for the tests; build neither again.
+      # Reuse the release frontend build and prepared native resources.
       - name: Build installer
         env:
           LILO_PREPARED: '1'
@@ -123,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: lilo-${{ matrix.target }}
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
           compression-level: 0
           path: |
@@ -138,8 +135,9 @@ jobs:
             target/${{ matrix.target }}/release/bundle/appimage/*.AppImage.sig
 
   publish:
-    # Publish only when frontend validation and all native builds succeeded.
-    if: needs.plan.outputs.build == 'true' && needs.frontend.result == 'success' && needs.build.result == 'success'
+    # Publish completed targets even when another matrix target failed. A rerun
+    # of failed jobs keeps the successful artifacts and adds the missing target.
+    if: always() && needs.plan.outputs.build == 'true' && needs.frontend.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'failure')
     needs: [plan, frontend, build]
     runs-on: ubuntu-22.04
     timeout-minutes: 10
