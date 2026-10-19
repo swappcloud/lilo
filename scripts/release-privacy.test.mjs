@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { privacyBuildEnvironment, assertPrivateDataAbsent, verifyPrivacyReport } from "./release-privacy.mjs";
+import { privacyBuildEnvironment, assertPrivateDataAbsent, discoverTargetArtifacts, verifyPrivacyReport } from "./release-privacy.mjs";
 
 test("MSVC linker records a portable PDB name and GNU targets retain their linker flags", () => {
   const env = privacyBuildEnvironment({}, "C:\\Users\\Builder", "D:\\project", "win32", "x86_64-pc-windows-msvc");
@@ -72,11 +72,13 @@ test("privacy gate rejects UTF-8 and UTF-16 machine paths without revealing valu
   const privatePath = "/Users/Build User/project/source.rs";
   for (const encoding of ["utf8", "utf16le"]) {
     assert.throws(() => assertPrivateDataAbsent(Buffer.from(privatePath, encoding), ["/Users/Build User"]), (error) => {
-      assert.equal(error.message, "Release privacy check failed: machine path");
+      assert.equal(error.message, "Release privacy check failed: machine path (toolchain home)");
       assert.ok(!error.message.includes("Build User"));
       return true;
     });
   }
+  assert.throws(() => assertPrivateDataAbsent(Buffer.from("D:/runner/work/project"), ["C:/Users/Runner", "D:/runner/work/project"]),
+    /machine path \(workspace\)/);
   assert.doesNotThrow(() => assertPrivateDataAbsent(Buffer.from("/lilo-build/project/source.rs"), ["/Users/Build User"]));
 });
 
@@ -103,6 +105,31 @@ test("privacy verification accepts old reports with unuploaded Debian signatures
       "LILO_0.1.0_amd64.deb.sig": createHash("sha256").update(debSignature).digest("hex"),
     } }));
     assert.doesNotThrow(() => verifyPrivacyReport([report, appImagePath], "x86_64-unknown-linux-gnu", "0.1.0"));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("release artifacts are discovered from privacy reports after flat or nested extraction", () => {
+  mkdirSync(".tmp", { recursive: true });
+  const directory = mkdtempSync(join(process.cwd(), ".tmp", "release-artifact-layout-"));
+  try {
+    const flat = join(directory, "flat");
+    const nested = join(directory, "nested", "lilo-x86_64-pc-windows-msvc");
+    for (const group of [flat, nested]) {
+      mkdirSync(group, { recursive: true });
+      const installer = join(group, "LILO_0.1.0_x64-setup.exe");
+      const bytes = Buffer.from("audited installer");
+      writeFileSync(installer, bytes);
+      writeFileSync(join(group, "privacy.json"), JSON.stringify({ schema: 1, version: "0.1.0",
+        target: "x86_64-pc-windows-msvc", artifacts: { [installer.split(/[\\/]/).pop()]: createHash("sha256").update(bytes).digest("hex") } }));
+    }
+    const flatGroups = discoverTargetArtifacts(flat);
+    assert.deepEqual(Object.keys(flatGroups), ["x86_64-pc-windows-msvc"]);
+    verifyPrivacyReport(flatGroups["x86_64-pc-windows-msvc"], "x86_64-pc-windows-msvc", "0.1.0");
+    const nestedGroups = discoverTargetArtifacts(join(directory, "nested"));
+    assert.deepEqual(Object.keys(nestedGroups), ["x86_64-pc-windows-msvc"]);
+    verifyPrivacyReport(nestedGroups["x86_64-pc-windows-msvc"], "x86_64-pc-windows-msvc", "0.1.0");
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

@@ -7,13 +7,13 @@
  * Env: RELEASE_SHA, RELEASE_TAG (the version), GH_TOKEN, GH_REPO.
  * LILO_KEEP_RELEASE_DRAFT=true retains a draft while missing targets are built.
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { TARGETS, findRelease } from "./release-plan.mjs";
 import { mergeUpdateManifest, updateArtifacts } from "./update-artifacts.mjs";
 import { releaseChanges } from "./changelog.mjs";
-import { verifyPrivacyReport } from "./release-privacy.mjs";
+import { discoverTargetArtifacts, verifyPrivacyReport } from "./release-privacy.mjs";
 
 const sha = process.env.RELEASE_SHA ?? "";
 const version = process.env.RELEASE_TAG ?? "";
@@ -25,17 +25,11 @@ const releaseSha = /^[a-f0-9]{40}$/.test(release?.targetCommitish ?? "") ? relea
 const root = ".tmp/release-artifacts";
 const upload = ".tmp/release-upload";
 
-function files(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    return entry.isDirectory() ? files(path) : entry.isFile() ? [path] : [];
-  });
-}
-
 // Each installer is copied under its published name before upload.
 mkdirSync(upload, { recursive: true });
-const assets = TARGETS.filter(({ target }) => existsSync(join(root, `lilo-${target}`))).flatMap(({ target, files: wanted }) => {
-  const found = files(join(root, `lilo-${target}`));
+const filesByTarget = discoverTargetArtifacts(root);
+const assets = TARGETS.filter(({ target }) => filesByTarget[target]).flatMap(({ target, files: wanted }) => {
+  const found = filesByTarget[target];
   return wanted.map(({ suffix, asset }) => {
     const matches = found.filter((path) => path.endsWith(suffix));
     if (matches.length !== 1) throw new Error(`Expected one ${suffix} installer for ${target}`);
@@ -46,9 +40,6 @@ const assets = TARGETS.filter(({ target }) => existsSync(join(root, `lilo-${targ
 });
 if (!assets.length) throw new Error("No installer was built");
 
-const filesByTarget = Object.fromEntries(TARGETS
-  .filter(({ target }) => existsSync(join(root, `lilo-${target}`)))
-  .map(({ target }) => [target, files(join(root, `lilo-${target}`))]));
 for (const [target, found] of Object.entries(filesByTarget)) verifyPrivacyReport(found, target, version);
 const updates = updateArtifacts(filesByTarget, version, (file) => readFileSync(file, "utf8"));
 const gh = (args) => execFileSync("gh", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
