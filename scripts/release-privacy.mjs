@@ -26,8 +26,9 @@ export function privacyBuildEnvironment(input, home = homedir(), root = process.
     flags.push(...windowsRemaps);
   }
   const msvc = target ? target.endsWith("-windows-msvc") : platform === "win32" && !input.RUSTUP_TOOLCHAIN?.includes("-windows-gnu");
-  // Rust source remapping does not change the linker's embedded PDB location.
-  if (msvc) flags.push("-C", "link-arg=/PDBALTPATH:lilo.pdb");
+  // MSVC stores Rust debug paths in external PDBs, outside rustc's path remap.
+  // PDBs are not release artifacts, so don't generate debug info for the app.
+  if (msvc) flags.push("-C", "strip=debuginfo", "-C", "link-arg=/PDBALTPATH:lilo.pdb");
   env.CARGO_ENCODED_RUSTFLAGS = flags.join("\x1f");
   delete env.RUSTFLAGS;
   // Rust flags do not cover native C dependencies compiled by cc-rs.
