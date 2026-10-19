@@ -11,20 +11,24 @@ export function dependencyPaths(output) {
     .filter(path => !/\/(?:libc\.so|libm\.so|ld-linux|ld64)/.test(path)))];
 }
 
-const fallbackLicensePackages = new Map([["libgcc_s.so.1", "libgcc-s1"]]);
-
 export function licensePackageNames(paths, findOwners) {
   const packages = new Set(["pocketsphinx-en-us", "pulseaudio-utils"]);
   for (const path of paths) {
-    try {
-      const ownership = findOwners(path);
-      for (const line of ownership.trim().split("\n")) {
-        if (line) packages.add(line.split(": ")[0].split(":")[0]);
+    // Debian package records may retain /lib while usrmerge resolves it to /usr/lib.
+    const alternate = path.startsWith("/usr/lib/") || path.startsWith("/usr/lib64/")
+      ? path.slice(4) : path.startsWith("/lib/") || path.startsWith("/lib64/") ? `/usr${path}` : path;
+    let ownership, lastError;
+    for (const candidate of new Set([path, alternate])) {
+      try {
+        ownership = findOwners(candidate);
+        break;
+      } catch (error) {
+        lastError = error;
       }
-    } catch (error) {
-      const fallback = fallbackLicensePackages.get(basename(path));
-      if (!fallback) throw error;
-      packages.add(fallback);
+    }
+    if (!ownership?.trim()) throw lastError ?? new Error(`Missing package owner for ${path}`);
+    for (const line of ownership.trim().split("\n")) {
+      if (line) packages.add(line.split(": ")[0].split(":")[0]);
     }
   }
   return packages;
@@ -57,7 +61,7 @@ export function prepareLinuxWake(root, { model = "/usr/share/pocketsphinx/model/
   }
   // Keep package copyright files with redistributed native libraries and models.
   const packages = licensePackageNames(all, (path) =>
-    execFileSync("dpkg-query", ["-S", realpathSync(path)], { encoding: "utf8" }));
+    execFileSync("dpkg-query", ["-S", path], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
   for (const name of packages) {
     const notice = `/usr/share/doc/${name}/copyright`;
     if (!existsSync(notice)) throw new Error(`Missing Linux wake redistribution notice: ${name}`);

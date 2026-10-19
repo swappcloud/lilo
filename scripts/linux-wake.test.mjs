@@ -13,11 +13,14 @@ test("Linux wake packaging includes native dependencies without bundling the hos
   assert.throws(() => dependencyPaths("libpocketsphinx.so.3 => not found"), /missing/);
 });
 
-test("Linux wake packaging keeps a license notice when dpkg has no owner for libgcc", () => {
-  const packages = licensePackageNames(["/usr/lib/libgcc_s.so.1"], () => {
+test("Linux wake packaging finds package owners across merged usr library paths", () => {
+  const packages = licensePackageNames(["/usr/lib/libgcc_s.so.1", "/lib/libdbus-1.so.3"], (path) => {
+    if (path === "/lib/libgcc_s.so.1") return "libgcc-s1:amd64: /lib/libgcc_s.so.1";
+    if (path === "/usr/lib/libdbus-1.so.3") return "libdbus-1-3:amd64: /usr/lib/libdbus-1.so.3";
     throw new Error("package owner not found");
   });
   assert.ok(packages.has("libgcc-s1"));
+  assert.ok(packages.has("libdbus-1-3"));
   assert.throws(
     () => licensePackageNames(["/usr/lib/libunknown.so"], () => { throw new Error("package owner not found"); }),
     /package owner not found/,
