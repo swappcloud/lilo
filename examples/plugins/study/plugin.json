@@ -1,7 +1,7 @@
 {
   "id": "com.lilo.study",
   "name": "Language study",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "api": 1,
   "runtime": "quickjs",
   "entry": "study.js",

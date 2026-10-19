@@ -438,7 +438,7 @@
           "description": "Crea il tuo piano a voce e riprendi con una memoria locale dello studio."
         }
       },
-      "version": "1.4.2",
+      "version": "1.4.3",
       "api": 1,
       "capabilities": [
         "storage:self",
@@ -455,7 +455,7 @@
       "files": [
         {
           "path": "plugin.json",
-          "sha256": "f1a32f81906b55f07e62ce963db9f5da4c02461eda9d59b964731aa4d030e2bb"
+          "sha256": "28112f9ae6f26a5d700aeb6e3906bd5669909ec76d41df30ac1df1bb558ca3b3"
         },
         {
           "path": "study.js",
