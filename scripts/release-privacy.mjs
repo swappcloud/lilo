@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-export function privacyBuildEnvironment(input, home = homedir(), root = process.cwd()) {
+export function privacyBuildEnvironment(input, home = homedir(), root = process.cwd(), platform = process.platform) {
   const env = { ...input };
   // Release artifacts never inherit a developer certificate or Apple account.
   env.APPLE_SIGNING_IDENTITY = "-";
@@ -17,6 +17,13 @@ export function privacyBuildEnvironment(input, home = homedir(), root = process.
   flags.push(`--remap-path-prefix=${home}=/lilo-build/toolchain`, `--remap-path-prefix=${root}=/lilo-build/project`);
   env.CARGO_ENCODED_RUSTFLAGS = flags.join("\x1f");
   delete env.RUSTFLAGS;
+  // Rust flags do not cover native C dependencies compiled by cc-rs.
+  if (platform === "linux") {
+    const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+    env.CC_SHELL_ESCAPED_FLAGS = "1";
+    env.CFLAGS = [env.CFLAGS, quote(`-ffile-prefix-map=${home}=/lilo-build/toolchain`),
+      quote(`-ffile-prefix-map=${root}=/lilo-build/project`)].filter(Boolean).join(" ");
+  }
   return env;
 }
 
@@ -60,7 +67,14 @@ export function auditBuildOutputs(root, target, version, env = process.env, nati
     if (!existsSync(helper)) throw new Error("Release privacy check failed: missing wake helper");
     candidates.push(helper);
   }
-  for (const file of candidates) assertPrivateDataAbsent(readFileSync(file), [homedir(), root]);
+  for (const file of candidates) {
+    try {
+      assertPrivateDataAbsent(readFileSync(file), [homedir(), root]);
+    } catch (error) {
+      // Identify the build output without printing the rejected private value.
+      throw new Error(`${error.message} in ${basename(file)}`);
+    }
+  }
   const bundle = join(release, "bundle");
   const artifacts = {};
   for (const file of files(bundle).filter(payload)) {

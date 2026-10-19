@@ -1,6 +1,32 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { privacyBuildEnvironment, assertPrivateDataAbsent } from "./release-privacy.mjs";
+
+test("Linux native compiler flags preserve user flags and anonymize source paths", () => {
+  const env = privacyBuildEnvironment({ CFLAGS: "-O2" }, "/home/Build User", "/home/Build User/project", "linux");
+  assert.equal(env.CC_SHELL_ESCAPED_FLAGS, "1");
+  assert.equal(env.CFLAGS, "-O2 '-ffile-prefix-map=/home/Build User=/lilo-build/toolchain' '-ffile-prefix-map=/home/Build User/project=/lilo-build/project'");
+  for (const platform of ["darwin", "win32"]) {
+    assert.equal(privacyBuildEnvironment({ CFLAGS: "existing" }, "home", "root", platform).CFLAGS, "existing");
+  }
+});
+
+test("native source locations are anonymized in compiled output", { skip: process.platform === "win32" }, () => {
+  mkdirSync(".tmp", { recursive: true });
+  const directory = mkdtempSync(join(process.cwd(), ".tmp", "compiler privacy "));
+  try {
+    const source = join(directory, "source.c");
+    const binary = join(directory, "fixture");
+    writeFileSync(source, '#include <stdio.h>\nint main(void) { puts(__FILE__); return 0; }\n');
+    execFileSync("cc", [`-ffile-prefix-map=${directory}=/lilo-build/project`, source, "-o", binary]);
+    assert.equal(execFileSync(binary, { encoding: "utf8" }).trim(), "/lilo-build/project/source.c");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("compiler privacy preserves flags and handles paths containing spaces", () => {
   const env = privacyBuildEnvironment({ RUSTFLAGS: "-C debuginfo=0" }, "/Users/Build User", "/Users/Build User/project");
