@@ -34,9 +34,10 @@ export function nightlyPlan(current, sha, releases) {
         return target.files.some((file) => !names.has(file.asset(latest.tag_name))) ||
           !names.has(update.asset(latest.tag_name)) || !names.has(`${update.asset(latest.tag_name)}.sig`);
       });
-      // If only release metadata is missing (or this is a draft), rebuild all
-      // targets so the publisher can create a complete release in one pass.
-      const targets = latest.draft || missing.length === 0 ? TARGETS : missing;
+      // Reuse every successful target even while the release is a draft.
+      // If only release metadata is missing, rebuild all targets to let the
+      // publisher regenerate it from their signed updater artifacts.
+      const targets = missing.length === 0 ? TARGETS : missing;
       return { build: true, tag: latest.tag_name, targets, reason: "finish an incomplete release" };
     }
   }

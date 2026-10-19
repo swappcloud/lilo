@@ -48,6 +48,13 @@ test("a later main commit resumes only missing targets of an incomplete release"
   assert.equal(plan.tag, "0.1.0");
   assert.deepEqual(plan.targets.map((target) => target.target), ["x86_64-pc-windows-msvc"]);
 });
+test("a draft partial release also resumes only its missing targets", () => {
+  const partial = { ...release("0.1.0"), target_commitish: "c".repeat(40), draft: true };
+  partial.assets = partial.assets.filter((asset) =>
+    !asset.name.includes("Windows") && !asset.name.includes("windows-x86_64"));
+  const plan = nightlyPlan("0.1.0", "b".repeat(40), [partial]);
+  assert.deepEqual(plan.targets.map((target) => target.target), ["x86_64-pc-windows-msvc"]);
+});
 test("a disposable checkout gets matching versions and valid notes without touching lockfiles", () => {
   const files = {
     "package.json": '{"version": "0.1.3"}',
