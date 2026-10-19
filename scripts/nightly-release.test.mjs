@@ -78,6 +78,7 @@ test("workflow publishes on main, supports scheduled and manual retries", async 
   assert.match(workflow, /fail-fast: false/);
   assert.match(workflow, /needs\.frontend\.result == 'success' && \(needs\.build\.result == 'success' \|\| needs\.build\.result == 'failure'\)/);
   assert.match(workflow, /Check updater signing configuration/);
+  assert.match(workflow, /bundle\/deb\/\*\.deb\.sig/);
 });
 
 test("PR CI covers app checks, workspace tests, and the Windows release profile", async () => {
