@@ -50,17 +50,40 @@ test("a disposable checkout gets matching versions and valid notes without touch
   assert.match(files["CHANGELOG.md"], /## \[0\.1\.4\]/);
   assert.equal(writes.some((file) => file.endsWith(".lock") || file.includes("lock.json")), false);
 });
-test("workflow supports scheduled and manual releases with release-profile tests", async () => {
+test("workflow publishes on main, supports scheduled and manual retries", async () => {
   const { readFile } = await import("node:fs/promises");
   const workflow = await readFile(new URL("../.github/workflows/release-build.yml", import.meta.url), "utf8");
   assert.match(workflow, /schedule:\s*\n\s*- cron: '0 2 \* \* \*'/);
   assert.match(workflow, /^\s*workflow_dispatch:/m);
-  assert.doesNotMatch(workflow, /^\s*(?:push|pull_request):/m);
+  assert.match(workflow, /^\s*push:\s*\n\s*branches: \[main\]/m);
+  assert.doesNotMatch(workflow, /^\s*pull_request:/m);
   assert.match(workflow, /node scripts\/nightly-release\.mjs/);
-  assert.match(workflow, /node scripts\/release-test\.mjs/);
+  assert.doesNotMatch(workflow, /node scripts\/release-test\.mjs/);
+  assert.doesNotMatch(workflow, /run: npm test/);
+  assert.doesNotMatch(workflow, /run: npm run typecheck/);
   assert.doesNotMatch(workflow, /run: cargo test --workspace\s*$/m);
   assert.match(workflow, /build:\s*\n\s*needs: \[plan, frontend\]/);
   assert.match(workflow, /fail-fast: false/);
-  assert.match(workflow, /needs\.frontend\.result == 'success' && needs\.build\.result == 'success'/);
+  assert.match(workflow, /needs\.frontend\.result == 'success' && \(needs\.build\.result == 'success' \|\| needs\.build\.result == 'failure'\)/);
   assert.match(workflow, /Check updater signing configuration/);
+});
+
+test("PR CI covers app checks, workspace tests, and the Windows release profile", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  assert.match(workflow, /^\s*pull_request:\s*\n\s*branches: \[main\]/m);
+  assert.match(workflow, /npm run typecheck/);
+  assert.match(workflow, /npm test/);
+  assert.match(workflow, /npm run build/);
+  assert.match(workflow, /cargo test --workspace/);
+  assert.match(workflow, /node scripts\/release-test\.mjs x86_64-pc-windows-msvc/);
+  assert.match(workflow, /runs-on: macos-15-intel/);
+  assert.match(workflow, /node scripts\/release-test\.mjs x86_64-apple-darwin/);
+});
+
+test("MSVC linker manifest path resolves from the workspace root", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const build = await readFile(new URL("../src-tauri/build.rs", import.meta.url), "utf8");
+  assert.match(build, /Path::new\("src-tauri\/windows"\)\.join\("app-manifest\.xml"\)/);
+  assert.match(build, /Path::new\(env!\("CARGO_MANIFEST_DIR"\)\)\s*\.join\("windows"\)\s*\.join\("app-manifest\.xml"\)/);
 });

@@ -31,9 +31,14 @@ fn main() {
     // stable instruction for unit-test-only link args, so every target gets
     // the manifest instead, and tauri-build's default one is disabled below so
     // the two cannot collide in the bin.
-    let manifest = Path::new("windows").join("app-manifest.xml");
+    // Cargo invokes the linker from the workspace root, not this package's
+    // directory. Keep the linker argument relative so MSVC does not embed a
+    // machine-specific absolute path in the executable.
+    let manifest = Path::new("src-tauri/windows").join("app-manifest.xml");
     if windows {
-        let manifest_source = Path::new(env!("CARGO_MANIFEST_DIR")).join(&manifest);
+        let manifest_source = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("windows")
+            .join("app-manifest.xml");
         println!("cargo:rerun-if-changed={}", manifest_source.display());
     }
     if windows && !gnu_windows {

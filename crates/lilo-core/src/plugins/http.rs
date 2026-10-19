@@ -275,7 +275,9 @@ mod tests {
         let url = format!("http://{}/data", listener.local_addr().unwrap());
         let (tx, rx) = mpsc::channel();
         let thread = thread::spawn(move || {
-            let until = Instant::now() + Duration::from_secs(3);
+            // Leave enough room for the highly parallel release test suite on
+            // slower CI runners to schedule this loopback server thread.
+            let until = Instant::now() + Duration::from_secs(10);
             while Instant::now() < until {
                 match listener.accept() {
                     Ok((mut stream, _)) => {
