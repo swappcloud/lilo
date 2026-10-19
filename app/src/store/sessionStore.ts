@@ -881,6 +881,8 @@ export const useSessionStore = create<SessionStore>((set, get) => {
         }),
         provider.onCaption((turn) => {
           if (activeProvider !== provider) return;
+          // Subscribers evaluate speech freshness synchronously during set().
+          if (turn.speaker === "assistant") lastAssistantCaptionAt = Date.now();
           events?.caption(turn);
           set((s) => {
             const conversations = s.conversations.map((c) => {
@@ -905,8 +907,6 @@ export const useSessionStore = create<SessionStore>((set, get) => {
           if (turn.final && turn.speaker !== "system" && (selectActiveConversation(get())?.turns.length ?? 0) >= MAX_TURNS) {
             void get().rolloverConversation().catch((error) => logError("conversation-rollover", error));
           }
-
-          if (turn.speaker === "assistant") lastAssistantCaptionAt = Date.now();
 
           // Command detection: every caption goes to the Rust router, which
           // decides what is a command. Partial captions matter — the web path

@@ -32,6 +32,7 @@ import { BaseProvider, newTurn, turnWithId, type ConnectOptions, type SharedImag
 const BARGE_IN_HOLD_MS = 220;
 const BARGE_IN_COOLDOWN_MS = 700;
 const MAX_RECONNECTS = 3;
+const DISCONNECT_GRACE_MS = 5_000;
 /** Number of spectrum bins pushed to the visualizer. */
 const SPECTRUM_BINS = 48;
 
@@ -62,6 +63,7 @@ export class ChatGptWebVoiceProvider extends BaseProvider {
   private outAnalyser: AnalyserNode | null = null;
   private levelRaf: number | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private disconnectedTimer: ReturnType<typeof setTimeout> | null = null;
 
   private options: ConnectOptions | null = null;
   private closing = false;
@@ -573,14 +575,35 @@ export class ChatGptWebVoiceProvider extends BaseProvider {
 
   private handleConnectionState(): void {
     if (this.closing || !this.pc) return;
-    const state = this.pc.connectionState;
-    if (state === "failed" || state === "disconnected" || state === "closed") {
+    const peer = this.pc;
+    const state = peer.connectionState;
+    log("chatgpt-web", `peer state: ${state}`);
+    if (state === "disconnected") {
+      // ICE may recover without replacing the live peer or interrupting its audio.
+      if (this.disconnectedTimer === null) {
+        this.disconnectedTimer = setTimeout(() => {
+          this.disconnectedTimer = null;
+          if (!this.closing && this.pc === peer && peer.connectionState === "disconnected") {
+            this.scheduleReconnect("connection disconnected");
+          }
+        }, DISCONNECT_GRACE_MS);
+      }
+      return;
+    }
+    this.clearDisconnectedTimer();
+    if (state === "failed" || state === "closed") {
       this.scheduleReconnect(`connection ${state}`);
     }
   }
 
+  private clearDisconnectedTimer(): void {
+    if (this.disconnectedTimer !== null) clearTimeout(this.disconnectedTimer);
+    this.disconnectedTimer = null;
+  }
+
   private scheduleReconnect(reason: string): void {
     if (this.closing || this.reconnecting) return;
+    log("chatgpt-web", `reconnect requested: ${reason}`);
 
     if (this.reconnectAttempts >= MAX_RECONNECTS) {
       this.emitState("error", "connection lost");
@@ -752,8 +775,8 @@ export class ChatGptWebVoiceProvider extends BaseProvider {
     this.ensureAudioContext();
 
     const tick = () => {
-      const mic = this.playbackSuppressed ? 0 : this.readLevel(this.micAnalyser);
-      const output = this.readLevel(this.outAnalyser);
+      const mic = this.readLevel(this.micAnalyser);
+      const output = this.playbackSuppressed ? 0 : this.readLevel(this.outAnalyser);
       this.micLevel = mic;
       // Feed the visualizer the live spectra (suppressed while muted/barge-in
       // so the animation matches what is actually audible).
@@ -1017,6 +1040,7 @@ export class ChatGptWebVoiceProvider extends BaseProvider {
   }
 
   private teardownPeer(): void {
+    this.clearDisconnectedTimer();
     if (this.dc) {
       this.dc.onopen = null;
       this.dc.onmessage = null;

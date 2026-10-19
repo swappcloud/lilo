@@ -193,7 +193,7 @@ export function CompanionShell() {
   const confirm = useConfirmStore((s) => s.command);
   const playing = isPlaying(useMediaStore((s) => s.nowPlaying));
   const connecting = useVoicePhase() === "thinking";
-  const speaking = useSessionStore((s) => s.assistantSpeaking);
+  const speaking = useSessionStore((s) => s.assistantSpeaking || s.outputLevel > 0.02);
   const picture = useGeneratedImageStore((s) => s.shown);
   const drawing = useGeneratedImageStore((s) => s.pending);
   const imageProgress = useGeneratedImageStore((s) => s.progress);

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ParsedEvent } from "./events";
 import type { TranscriptTurn } from "../../types";
@@ -151,5 +151,99 @@ describe("reply onset and interruption", () => {
     internals.applyEvent({ kind: "speaking", speaker: "assistant", text: "", final: false, mode: "replace", raw: null });
     expect(audio.muted).toBe(false);
     expect(play).toHaveBeenCalledOnce();
+  });
+});
+
+describe("interrupted playback levels", () => {
+  it("keeps measuring the user microphone while suppressing assistant output", () => {
+    const provider = new ChatGptWebVoiceProvider();
+    const levels: Array<{ mic: number; output: number }> = [];
+    provider.onLevel((level) => levels.push(level));
+    const mic = {} as AnalyserNode;
+    const internals = provider as unknown as {
+      playbackSuppressed: boolean;
+      micAnalyser: AnalyserNode;
+      ensureAudioContext(): void;
+      readLevel(analyser: AnalyserNode | null): number;
+      readSpectrum(analyser: AnalyserNode | null): number[];
+      startLevelLoop(): void;
+      stopLevelLoop(): void;
+    };
+    internals.playbackSuppressed = true;
+    internals.micAnalyser = mic;
+    const context = vi.spyOn(internals, "ensureAudioContext").mockImplementation(() => {});
+    const read = vi.spyOn(internals, "readLevel").mockImplementation((analyser) => analyser === mic ? 0.5 : 0.8);
+    const spectrum = vi.spyOn(internals, "readSpectrum").mockReturnValue([]);
+    let frame: FrameRequestCallback = () => {};
+    const raf = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => { frame = callback; return 1; });
+    const cancel = vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
+    try {
+      internals.startLevelLoop();
+      frame(0);
+      expect(levels.at(-1)).toEqual({ mic: 0.5, output: 0 });
+    } finally {
+      internals.stopLevelLoop();
+      context.mockRestore();
+      read.mockRestore();
+      spectrum.mockRestore();
+      raf.mockRestore();
+      cancel.mockRestore();
+    }
+  });
+});
+
+describe("temporary WebRTC connection loss", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  function connection() {
+    const provider = new ChatGptWebVoiceProvider();
+    const peer = { connectionState: "disconnected", close: vi.fn() };
+    const internals = provider as unknown as {
+      pc: RTCPeerConnection;
+      handleConnectionState(): void;
+      scheduleReconnect(reason: string): void;
+    };
+    internals.pc = peer as unknown as RTCPeerConnection;
+    const reconnect = vi.spyOn(internals, "scheduleReconnect").mockImplementation(() => {});
+    return { provider, peer, internals, reconnect };
+  }
+
+  it("allows a brief disconnect to recover without restarting the conversation", () => {
+    const { peer, internals, reconnect } = connection();
+    internals.handleConnectionState();
+    vi.advanceTimersByTime(1000);
+    peer.connectionState = "connected";
+    internals.handleConnectionState();
+    vi.advanceTimersByTime(10_000);
+    expect(reconnect).not.toHaveBeenCalled();
+  });
+
+  it("reconnects once after a sustained disconnect, without extending its grace period", () => {
+    const { internals, reconnect } = connection();
+    internals.handleConnectionState();
+    vi.advanceTimersByTime(3000);
+    internals.handleConnectionState();
+    expect(reconnect).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2000);
+    expect(reconnect).toHaveBeenCalledExactlyOnceWith("connection disconnected");
+  });
+
+  it("does not delay a terminal failure and clears the transient disconnect timer", () => {
+    const { peer, internals, reconnect } = connection();
+    internals.handleConnectionState();
+    peer.connectionState = "failed";
+    internals.handleConnectionState();
+    expect(reconnect).toHaveBeenCalledExactlyOnceWith("connection failed");
+    vi.advanceTimersByTime(10_000);
+    expect(reconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("never reconnects after the user ends the conversation", async () => {
+    const { provider, internals, reconnect } = connection();
+    internals.handleConnectionState();
+    await provider.disconnect();
+    vi.advanceTimersByTime(10_000);
+    expect(reconnect).not.toHaveBeenCalled();
   });
 });

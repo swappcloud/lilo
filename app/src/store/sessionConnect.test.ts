@@ -360,6 +360,22 @@ describe("connect()", () => {
 
 
 describe("streaming caption storage", () => {
+  it("marks the first assistant caption as speaking after a long quiet interval", async () => {
+    const connecting = useSessionStore.getState().connect();
+    await flush();
+    const provider = created.at(-1)!;
+    provider.settleConnect();
+    await connecting;
+    const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 60_000);
+    try {
+      provider.reportCaption({ id: "first-reply", speaker: "assistant", text: "Hello", final: false, timestamp: Date.now() });
+      expect(useSessionStore.getState().assistantSpeaking).toBe(true);
+    } finally {
+      clock.mockRestore();
+      await useSessionStore.getState().disconnect();
+    }
+  });
+
   it("updates the live conversation before saving and coalesces revisions", async () => {
     const connecting = useSessionStore.getState().connect();
     await flush();
