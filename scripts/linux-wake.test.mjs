@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dependencyPaths } from "./prepare-linux-wake.mjs";
+import { dependencyPaths, licensePackageNames } from "./prepare-linux-wake.mjs";
 
 test("Linux wake packaging includes native dependencies without bundling the host C ABI", () => {
   assert.deepEqual(dependencyPaths(`
@@ -11,4 +11,15 @@ test("Linux wake packaging includes native dependencies without bundling the hos
     /lib64/ld-linux-x86-64.so.2 (0x321)
   `), ["/usr/lib/libsphinxbase.so.3", "/usr/lib/pulseaudio/libpulsecommon-16.1.so"]);
   assert.throws(() => dependencyPaths("libpocketsphinx.so.3 => not found"), /missing/);
+});
+
+test("Linux wake packaging keeps a license notice when dpkg has no owner for libgcc", () => {
+  const packages = licensePackageNames(["/usr/lib/libgcc_s.so.1"], () => {
+    throw new Error("package owner not found");
+  });
+  assert.ok(packages.has("libgcc-s1"));
+  assert.throws(
+    () => licensePackageNames(["/usr/lib/libunknown.so"], () => { throw new Error("package owner not found"); }),
+    /package owner not found/,
+  );
 });

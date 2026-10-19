@@ -11,6 +11,25 @@ export function dependencyPaths(output) {
     .filter(path => !/\/(?:libc\.so|libm\.so|ld-linux|ld64)/.test(path)))];
 }
 
+const fallbackLicensePackages = new Map([["libgcc_s.so.1", "libgcc-s1"]]);
+
+export function licensePackageNames(paths, findOwners) {
+  const packages = new Set(["pocketsphinx-en-us", "pulseaudio-utils"]);
+  for (const path of paths) {
+    try {
+      const ownership = findOwners(path);
+      for (const line of ownership.trim().split("\n")) {
+        if (line) packages.add(line.split(": ")[0].split(":")[0]);
+      }
+    } catch (error) {
+      const fallback = fallbackLicensePackages.get(basename(path));
+      if (!fallback) throw error;
+      packages.add(fallback);
+    }
+  }
+  return packages;
+}
+
 export function prepareLinuxWake(root, { model = "/usr/share/pocketsphinx/model/en-us", capture = "/usr/bin/parec" } = {}) {
   const output = join(root, ".tmp", "linux-wake");
   if (!existsSync(join(model, "en-us")) || !existsSync(join(model, "cmudict-en-us.dict")) || !existsSync(capture)) {
@@ -37,11 +56,8 @@ export function prepareLinuxWake(root, { model = "/usr/share/pocketsphinx/model/
     files[`/usr/lib/${name}`] = `../.tmp/linux-wake/lib/${name}`;
   }
   // Keep package copyright files with redistributed native libraries and models.
-  const packages = new Set(["pocketsphinx-en-us", "pulseaudio-utils"]);
-  for (const path of all) {
-    const ownership = execFileSync("dpkg-query", ["-S", realpathSync(path)], { encoding: "utf8" });
-    for (const line of ownership.trim().split("\n")) packages.add(line.split(": ")[0].split(":")[0]);
-  }
+  const packages = licensePackageNames(all, (path) =>
+    execFileSync("dpkg-query", ["-S", realpathSync(path)], { encoding: "utf8" }));
   for (const name of packages) {
     const notice = `/usr/share/doc/${name}/copyright`;
     if (!existsSync(notice)) throw new Error(`Missing Linux wake redistribution notice: ${name}`);
