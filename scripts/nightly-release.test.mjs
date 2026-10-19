@@ -32,9 +32,28 @@ test("unpublished changes receive a new immutable version even without a manual 
 });
 test("failed or partial publication retries the same version instead of skipping missing platforms", () => {
   for (const entry of [{ ...release(), draft: true }, { ...release(), assets: [] }, { ...release(), assets: release().assets.slice(0, -1) }]) {
-    assert.deepEqual(nightlyPlan("0.1.3", sha, [entry]), { build: true, tag: "0.1.3", reason: "finish an incomplete release" });
+    const plan = nightlyPlan("0.1.3", sha, [entry]);
+    assert.equal(plan.build, true);
+    assert.equal(plan.tag, "0.1.3");
+    assert.equal(plan.reason, "finish an incomplete release");
+    assert.ok(plan.targets.length > 0);
   }
   assert.throws(() => nightlyPlan("0.1.3", "main", []), /Invalid/);
+});
+test("a later main commit resumes only missing targets of an incomplete release", () => {
+  const partial = { ...release("0.1.0"), target_commitish: "c".repeat(40) };
+  partial.assets = partial.assets.filter((asset) =>
+    !asset.name.includes("Windows") && !asset.name.includes("windows-x86_64"));
+  const plan = nightlyPlan("0.1.0", "b".repeat(40), [partial]);
+  assert.equal(plan.tag, "0.1.0");
+  assert.deepEqual(plan.targets.map((target) => target.target), ["x86_64-pc-windows-msvc"]);
+});
+test("a draft partial release also resumes only its missing targets", () => {
+  const partial = { ...release("0.1.0"), target_commitish: "c".repeat(40), draft: true };
+  partial.assets = partial.assets.filter((asset) =>
+    !asset.name.includes("Windows") && !asset.name.includes("windows-x86_64"));
+  const plan = nightlyPlan("0.1.0", "b".repeat(40), [partial]);
+  assert.deepEqual(plan.targets.map((target) => target.target), ["x86_64-pc-windows-msvc"]);
 });
 test("a disposable checkout gets matching versions and valid notes without touching lockfiles", () => {
   const files = {
@@ -77,6 +96,7 @@ test("PR CI covers app checks, workspace tests, and the Windows release profile"
   assert.match(workflow, /npm run build/);
   assert.match(workflow, /cargo test --workspace/);
   assert.match(workflow, /node scripts\/release-test\.mjs x86_64-pc-windows-msvc/);
+  assert.match(workflow, /node --test scripts\/release-privacy\.test\.mjs/);
   assert.match(workflow, /runs-on: macos-15-intel/);
   assert.match(workflow, /node scripts\/release-test\.mjs x86_64-apple-darwin/);
 });

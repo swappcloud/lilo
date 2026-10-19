@@ -63,27 +63,41 @@ if (target.length > 0) {
   console.log(`[build] Windows GNU toolchain detected — bundling with ${triple}`);
 }
 
-const child = spawn("npx", ["tauri", "build", ...args, ...target], {
-  stdio: "inherit",
-  shell: isWindows,
-  env,
-});
+const command = ["tauri", "build", ...args, ...target];
+const isMacDmgBuild = process.platform === "darwin" && args.some((arg, index) =>
+  ((arg === "--bundles" || arg === "-b") && args[index + 1]?.split(",").includes("dmg")) ||
+  (arg.startsWith("--bundles=") && arg.slice("--bundles=".length).split(",").includes("dmg")));
 
-child.on("exit", (code, signal) => {
-  if (code !== 0 || signal) process.exit(code || 1);
-  if (!args.includes("--help") && !args.includes("-h")) {
-    const effectiveTarget = requestedTarget || triple || hostTriple();
-    try {
-      auditBuildOutputs(process.cwd(), effectiveTarget, version, env, !hasTarget && !target.length);
-      console.log(`[build] Release privacy audit passed for ${effectiveTarget}`);
-    } catch (error) {
-      console.error(`[build] ${error.message}`);
-      process.exit(1);
+function run(attempt = 1) {
+  let output = "";
+  const child = spawn("npx", command, { stdio: ["inherit", "pipe", "pipe"], shell: isWindows, env });
+  child.stdout.on("data", (chunk) => { process.stdout.write(chunk); output += chunk.toString(); });
+  child.stderr.on("data", (chunk) => { process.stderr.write(chunk); output += chunk.toString(); });
+
+  child.on("exit", (code, signal) => {
+    const transientDmgError = /hdiutil[^\n]*resource busy|couldn't eject[^\n]*resource busy|resource busy/i.test(output);
+    if ((code !== 0 || signal) && isMacDmgBuild && attempt < 3 && transientDmgError) {
+      console.warn(`[build] Transient macOS DMG mount error; retrying bundle (${attempt + 1}/3)`);
+      run(attempt + 1);
+      return;
     }
-  }
-  process.exit(0);
-});
-child.on("error", (error) => {
-  console.error("[build] failed to start `tauri build`:", error.message);
-  process.exit(1);
-});
+    if (code !== 0 || signal) process.exit(code || 1);
+    if (!args.includes("--help") && !args.includes("-h")) {
+      const effectiveTarget = requestedTarget || triple || hostTriple();
+      try {
+        auditBuildOutputs(process.cwd(), effectiveTarget, version, env, !hasTarget && !target.length);
+        console.log(`[build] Release privacy audit passed for ${effectiveTarget}`);
+      } catch (error) {
+        console.error(`[build] ${error.message}`);
+        process.exit(1);
+      }
+    }
+    process.exit(0);
+  });
+  child.on("error", (error) => {
+    console.error("[build] failed to start `tauri build`:", error.message);
+    process.exit(1);
+  });
+}
+
+run();

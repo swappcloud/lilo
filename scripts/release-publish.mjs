@@ -5,6 +5,7 @@
  * and re-running that job adds its installer to the same release.
  *
  * Env: RELEASE_SHA, RELEASE_TAG (the version), GH_TOKEN, GH_REPO.
+ * LILO_KEEP_RELEASE_DRAFT=true retains a draft while missing targets are built.
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -19,6 +20,8 @@ const version = process.env.RELEASE_TAG ?? "";
 if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error("Invalid release commit");
 if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error("Invalid release version");
 const changes = releaseChanges(readFileSync("CHANGELOG.md", "utf8"), version);
+const release = findRelease(version);
+const releaseSha = /^[a-f0-9]{40}$/.test(release?.targetCommitish ?? "") ? release.targetCommitish : sha;
 const root = ".tmp/release-artifacts";
 const upload = ".tmp/release-upload";
 
@@ -49,8 +52,6 @@ const filesByTarget = Object.fromEntries(TARGETS
 for (const [target, found] of Object.entries(filesByTarget)) verifyPrivacyReport(found, target, version);
 const updates = updateArtifacts(filesByTarget, version, (file) => readFileSync(file, "utf8"));
 const gh = (args) => execFileSync("gh", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
-const release = findRelease(version);
-if (release && release.targetCommitish !== sha) throw new Error(`Release ${version} targets another commit`);
 if (release?.assets?.some((asset) => asset.name === "latest.json")) {
   const previous = ".tmp/release-previous";
   mkdirSync(previous, { recursive: true });
@@ -72,7 +73,7 @@ const missing = TARGETS.filter((entry) => !present.includes(entry));
 
 mkdirSync(".tmp", { recursive: true });
 writeFileSync(".tmp/release-notes.md", [
-  `LILO ${version}, built from ${sha}.`,
+  `LILO ${version}, source commit ${releaseSha}.`,
   "",
   changes,
   "",
@@ -97,5 +98,7 @@ if (!release) {
     "--title", `LILO ${version}`, "--notes-file", ".tmp/release-notes.md"]);
 }
 gh(["release", "upload", version, ...assets, "--clobber"]);
-gh(["release", "edit", version, "--draft=false", "--notes-file", ".tmp/release-notes.md"]);
+if (process.env.LILO_KEEP_RELEASE_DRAFT !== "true") {
+  gh(["release", "edit", version, "--draft=false", "--notes-file", ".tmp/release-notes.md"]);
+}
 console.log(gh(["release", "view", version, "--json", "url", "--jq", ".url"]));

@@ -84,6 +84,8 @@ jobs:
           path: dist/
       - name: Test Windows release profile
         run: node scripts/release-test.mjs x86_64-pc-windows-msvc
+      - name: Test Windows release privacy
+        run: node --test scripts/release-privacy.test.mjs
 
   macos-intel-release:
     needs: checks

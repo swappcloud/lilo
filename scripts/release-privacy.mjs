@@ -16,8 +16,14 @@ export function privacyBuildEnvironment(input, home = homedir(), root = process.
     : (env.RUSTFLAGS ?? "").split(/\s+/).filter(Boolean);
   flags.push(`--remap-path-prefix=${home}=/lilo-build/toolchain`, `--remap-path-prefix=${root}=/lilo-build/project`);
   if (platform === "win32") {
-    flags.push(`--remap-path-prefix=${home.replaceAll("\\", "/")}=/lilo-build/toolchain`,
-      `--remap-path-prefix=${root.replaceAll("\\", "/")}=/lilo-build/project`);
+    const windowsRemaps = [[home, "/lilo-build/toolchain"], [root, "/lilo-build/project"]]
+      .flatMap(([path, replacement]) => {
+        const forward = path.replaceAll("\\", "/");
+        const variants = [path, forward];
+        if (/^[A-Za-z]:[\\/]/.test(path)) variants.push(`\\\\?\\${path}`, `//?/${forward}`);
+        return [...new Set(variants)].map((variant) => `--remap-path-prefix=${variant}=${replacement}`);
+      });
+    flags.push(...windowsRemaps);
   }
   const msvc = target ? target.endsWith("-windows-msvc") : platform === "win32" && !input.RUSTUP_TOOLCHAIN?.includes("-windows-gnu");
   // Rust source remapping does not change the linker's embedded PDB location.
@@ -58,7 +64,8 @@ function files(dir) {
   });
 }
 
-const payload = (file) => /(?:\.dmg|\.exe|\.deb|\.AppImage|\.app\.tar\.gz|\.sig)$/.test(file);
+// Debian signatures are neither release assets nor updater payloads.
+const payload = (file) => /(?:\.dmg|\.exe|\.deb|\.AppImage|\.app\.tar\.gz|\.sig)$/.test(file) && !file.endsWith(".deb.sig");
 const digest = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
 
 /** Only explicit app outputs are scanned; browser profiles and accounts are never inputs. */
@@ -104,8 +111,10 @@ export function verifyPrivacyReport(found, target, version) {
     throw new Error(`Invalid privacy report for ${target}`);
   }
   const artifacts = found.filter(payload);
-  if (artifacts.length !== Object.keys(report.artifacts ?? {}).length ||
-    artifacts.some((file) => report.artifacts?.[basename(file)] !== digest(file))) {
+  // Older reports included a .deb.sig file that the workflow did not upload.
+  const expected = Object.fromEntries(Object.entries(report.artifacts ?? {}).filter(([name]) => !name.endsWith(".deb.sig")));
+  if (artifacts.length !== Object.keys(expected).length ||
+    artifacts.some((file) => expected[basename(file)] !== digest(file))) {
     throw new Error(`Privacy report does not match artifact bytes for ${target}`);
   }
 }
