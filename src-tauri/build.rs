@@ -31,14 +31,15 @@ fn main() {
     // stable instruction for unit-test-only link args, so every target gets
     // the manifest instead, and tauri-build's default one is disabled below so
     // the two cannot collide in the bin.
-    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("windows")
-        .join("app-manifest.xml");
+    let manifest = Path::new("windows").join("app-manifest.xml");
     if windows {
-        println!("cargo:rerun-if-changed={}", manifest.display());
+        let manifest_source = Path::new(env!("CARGO_MANIFEST_DIR")).join(&manifest);
+        println!("cargo:rerun-if-changed={}", manifest_source.display());
     }
     if windows && !gnu_windows {
         println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
+        // Keep the linker input relative. MSVC can preserve absolute
+        // `/MANIFESTINPUT` arguments in the release executable's debug data.
         println!("cargo:rustc-link-arg=/MANIFESTINPUT:{}", manifest.display());
     }
     if gnu_windows {
