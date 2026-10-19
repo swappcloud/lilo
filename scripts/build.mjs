@@ -23,7 +23,10 @@ import { auditBuildOutputs, privacyBuildEnvironment } from "./release-privacy.mj
 
 const args = process.argv.slice(2);
 const version = checkVersion();
-const env = privacyBuildEnvironment(withToolchains(process.env));
+const explicit = args.findIndex((arg) => arg === "--target" || arg === "-t");
+const compact = args.find((arg) => arg.startsWith("--target=") || arg.startsWith("-t="));
+const requestedTarget = explicit >= 0 ? args[explicit + 1] : compact?.split("=")[1] ?? "";
+const env = privacyBuildEnvironment(withToolchains(process.env), undefined, undefined, process.platform, requestedTarget);
 // CI prepares the resources (and the frontend) once before its tests and
 // sets LILO_PREPARED, so the installer step does not build them again.
 if (!args.includes("--help") && !args.includes("-h") && !process.env.LILO_PREPARED) {
@@ -69,9 +72,7 @@ const child = spawn("npx", ["tauri", "build", ...args, ...target], {
 child.on("exit", (code, signal) => {
   if (code !== 0 || signal) process.exit(code || 1);
   if (!args.includes("--help") && !args.includes("-h")) {
-    const explicit = args.findIndex((arg) => arg === "--target" || arg === "-t");
-    const compact = args.find((arg) => arg.startsWith("--target=") || arg.startsWith("-t="));
-    const effectiveTarget = explicit >= 0 ? args[explicit + 1] : compact?.split("=")[1] ?? (triple || hostTriple());
+    const effectiveTarget = requestedTarget || triple || hostTriple();
     try {
       auditBuildOutputs(process.cwd(), effectiveTarget, version, env, !hasTarget && !target.length);
       console.log(`[build] Release privacy audit passed for ${effectiveTarget}`);

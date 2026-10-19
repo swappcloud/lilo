@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-export function privacyBuildEnvironment(input, home = homedir(), root = process.cwd(), platform = process.platform) {
+export function privacyBuildEnvironment(input, home = homedir(), root = process.cwd(), platform = process.platform, target = "") {
   const env = { ...input };
   // Release artifacts never inherit a developer certificate or Apple account.
   env.APPLE_SIGNING_IDENTITY = "-";
@@ -15,6 +15,13 @@ export function privacyBuildEnvironment(input, home = homedir(), root = process.
     ? env.CARGO_ENCODED_RUSTFLAGS.split("\x1f")
     : (env.RUSTFLAGS ?? "").split(/\s+/).filter(Boolean);
   flags.push(`--remap-path-prefix=${home}=/lilo-build/toolchain`, `--remap-path-prefix=${root}=/lilo-build/project`);
+  if (platform === "win32") {
+    flags.push(`--remap-path-prefix=${home.replaceAll("\\", "/")}=/lilo-build/toolchain`,
+      `--remap-path-prefix=${root.replaceAll("\\", "/")}=/lilo-build/project`);
+  }
+  const msvc = target ? target.endsWith("-windows-msvc") : platform === "win32" && !input.RUSTUP_TOOLCHAIN?.includes("-windows-gnu");
+  // Rust source remapping does not change the linker's embedded PDB location.
+  if (msvc) flags.push("-C", "link-arg=/PDBALTPATH:lilo.pdb");
   env.CARGO_ENCODED_RUSTFLAGS = flags.join("\x1f");
   delete env.RUSTFLAGS;
   // Rust flags do not cover native C dependencies compiled by cc-rs.

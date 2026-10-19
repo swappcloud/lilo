@@ -7,5 +7,5 @@ import { TARGETS } from "./release-plan.mjs";
 const target = process.argv[2];
 if (process.argv.length !== 3 || !TARGETS.some((entry) => entry.target === target)) throw new Error("Expected a supported release target");
 execFileSync("cargo", ["test", "--workspace", "--release", "--target", target], {
-  stdio: "inherit", env: privacyBuildEnvironment(withToolchains(process.env)),
+  stdio: "inherit", env: privacyBuildEnvironment(withToolchains(process.env), undefined, undefined, process.platform, target),
 });

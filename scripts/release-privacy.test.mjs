@@ -1,9 +1,35 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { privacyBuildEnvironment, assertPrivateDataAbsent } from "./release-privacy.mjs";
+
+test("MSVC linker records a portable PDB name and GNU targets retain their linker flags", () => {
+  const env = privacyBuildEnvironment({}, "C:\\Users\\Builder", "D:\\project", "win32", "x86_64-pc-windows-msvc");
+  const flags = env.CARGO_ENCODED_RUSTFLAGS.split("\x1f");
+  assert.ok(flags.includes("link-arg=/PDBALTPATH:lilo.pdb"));
+  assert.ok(flags.includes("--remap-path-prefix=C:/Users/Builder=/lilo-build/toolchain"));
+  assert.ok(flags.includes("--remap-path-prefix=D:/project=/lilo-build/project"));
+  const gnu = privacyBuildEnvironment({}, "home", "root", "win32", "x86_64-pc-windows-gnu");
+  assert.ok(!gnu.CARGO_ENCODED_RUSTFLAGS.includes("PDBALTPATH"));
+});
+
+test("Windows release binary contains no local PDB path", { skip: process.platform !== "win32" }, () => {
+  mkdirSync(".tmp", { recursive: true });
+  const directory = mkdtempSync(join(process.cwd(), ".tmp", "linker-privacy-"));
+  try {
+    const source = join(directory, "fixture.rs");
+    const binary = join(directory, "fixture.exe");
+    writeFileSync(source, 'fn main() { println!("release privacy fixture"); }\n');
+    const env = privacyBuildEnvironment(process.env, undefined, directory, "win32", "x86_64-pc-windows-msvc");
+    execFileSync("rustc", [source, "--target", "x86_64-pc-windows-msvc", "-C", "debuginfo=2", "-o", binary,
+      ...env.CARGO_ENCODED_RUSTFLAGS.split("\x1f")]);
+    assertPrivateDataAbsent(readFileSync(binary), [directory]);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("Linux native compiler flags preserve user flags and anonymize source paths", () => {
   const env = privacyBuildEnvironment({ CFLAGS: "-O2" }, "/home/Build User", "/home/Build User/project", "linux");
@@ -29,7 +55,7 @@ test("native source locations are anonymized in compiled output", { skip: proces
 });
 
 test("compiler privacy preserves flags and handles paths containing spaces", () => {
-  const env = privacyBuildEnvironment({ RUSTFLAGS: "-C debuginfo=0" }, "/Users/Build User", "/Users/Build User/project");
+  const env = privacyBuildEnvironment({ RUSTFLAGS: "-C debuginfo=0" }, "/Users/Build User", "/Users/Build User/project", "darwin");
   assert.equal(env.RUSTFLAGS, undefined);
   assert.deepEqual(env.CARGO_ENCODED_RUSTFLAGS.split("\x1f"), [
     "-C", "debuginfo=0", "--remap-path-prefix=/Users/Build User=/lilo-build/toolchain",
