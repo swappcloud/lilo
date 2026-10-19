@@ -131,7 +131,6 @@ jobs:
             target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
             target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             target/${{ matrix.target }}/release/bundle/deb/*.deb
-          target/${{ matrix.target }}/release/bundle/deb/*.deb.sig
             target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
             target/${{ matrix.target }}/release/bundle/appimage/*.AppImage.sig
 

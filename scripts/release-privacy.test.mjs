@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { privacyBuildEnvironment, assertPrivateDataAbsent } from "./release-privacy.mjs";
+import { privacyBuildEnvironment, assertPrivateDataAbsent, verifyPrivacyReport } from "./release-privacy.mjs";
 
 test("MSVC linker records a portable PDB name and GNU targets retain their linker flags", () => {
   const env = privacyBuildEnvironment({}, "C:\\Users\\Builder", "D:\\project", "win32", "x86_64-pc-windows-msvc");
@@ -86,6 +87,25 @@ test("privacy gate rejects credentials and personal email addresses", () => {
 
 test("privacy gate allows public signing material and platform paths", () => {
   assert.doesNotThrow(() => assertPrivateDataAbsent(Buffer.from("/System/Library/Frameworks RWQpublic-updater-key com.lilo.app"), []));
+});
+
+test("privacy verification accepts old reports with unuploaded Debian signatures", () => {
+  mkdirSync(".tmp", { recursive: true });
+  const directory = mkdtempSync(join(process.cwd(), ".tmp", "privacy-report-"));
+  try {
+    const appImage = Buffer.from("published AppImage");
+    const debSignature = Buffer.from("unpublished Debian signature");
+    const report = join(directory, "privacy.json");
+    const appImagePath = join(directory, "LILO_0.1.0_amd64.AppImage");
+    writeFileSync(appImagePath, appImage);
+    writeFileSync(report, JSON.stringify({ schema: 1, version: "0.1.0", target: "x86_64-unknown-linux-gnu", artifacts: {
+      "LILO_0.1.0_amd64.AppImage": createHash("sha256").update(appImage).digest("hex"),
+      "LILO_0.1.0_amd64.deb.sig": createHash("sha256").update(debSignature).digest("hex"),
+    } }));
+    assert.doesNotThrow(() => verifyPrivacyReport([report, appImagePath], "x86_64-unknown-linux-gnu", "0.1.0"));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 

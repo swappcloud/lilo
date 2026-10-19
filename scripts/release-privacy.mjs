@@ -64,7 +64,8 @@ function files(dir) {
   });
 }
 
-const payload = (file) => /(?:\.dmg|\.exe|\.deb|\.AppImage|\.app\.tar\.gz|\.sig)$/.test(file);
+// Debian signatures are neither release assets nor updater payloads.
+const payload = (file) => /(?:\.dmg|\.exe|\.deb|\.AppImage|\.app\.tar\.gz|\.sig)$/.test(file) && !file.endsWith(".deb.sig");
 const digest = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
 
 /** Only explicit app outputs are scanned; browser profiles and accounts are never inputs. */
@@ -110,8 +111,10 @@ export function verifyPrivacyReport(found, target, version) {
     throw new Error(`Invalid privacy report for ${target}`);
   }
   const artifacts = found.filter(payload);
-  if (artifacts.length !== Object.keys(report.artifacts ?? {}).length ||
-    artifacts.some((file) => report.artifacts?.[basename(file)] !== digest(file))) {
+  // Older reports included a .deb.sig file that the workflow did not upload.
+  const expected = Object.fromEntries(Object.entries(report.artifacts ?? {}).filter(([name]) => !name.endsWith(".deb.sig")));
+  if (artifacts.length !== Object.keys(expected).length ||
+    artifacts.some((file) => expected[basename(file)] !== digest(file))) {
     throw new Error(`Privacy report does not match artifact bytes for ${target}`);
   }
 }
