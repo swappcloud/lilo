@@ -41,10 +41,14 @@ The frontend is checked and built once on Linux, then reused by all four native
 jobs. JavaScript tests also run on Windows and Apple Silicon to retain OS-specific
 coverage. Native workspace tests use the installer's release profile and compiler
 path remapping, avoiding a separate debug dependency build. Native jobs depend on
-the shared frontend, so a central failure prevents them from starting. Matrix
-fail-fast cancels remaining native jobs after a failure. Publication requires all
-four targets to succeed. No partial release is published. The current workflow marks published builds
-as prereleases pending platform and device acceptance.
+the shared frontend, so a central failure prevents them from starting. Native
+jobs finish independently, preserving successful platform builds after another
+target fails. Retry failed jobs of the same commit with
+`gh run rerun <run-id> --failed --repo swappcloud/lilo`; successful jobs and
+their retained artifacts are reused. Source changes require a new run.
+Publication requires all four targets to succeed. No partial release is
+published. The current workflow marks published builds as prereleases pending
+platform and device acceptance.
 
 Installers are uploaded as temporary artifacts for one day; successfully published
 packages remain at [GitHub Releases](https://github.com/swappcloud/lilo/releases/).

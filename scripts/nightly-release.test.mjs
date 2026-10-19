@@ -60,7 +60,7 @@ test("workflow supports scheduled and manual releases with release-profile tests
   assert.match(workflow, /node scripts\/release-test\.mjs/);
   assert.doesNotMatch(workflow, /run: cargo test --workspace\s*$/m);
   assert.match(workflow, /build:\s*\n\s*needs: \[plan, frontend\]/);
-  assert.match(workflow, /fail-fast: true/);
+  assert.match(workflow, /fail-fast: false/);
   assert.match(workflow, /needs\.frontend\.result == 'success' && needs\.build\.result == 'success'/);
   assert.match(workflow, /Check updater signing configuration/);
 });
