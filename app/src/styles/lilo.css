@@ -1,0 +1,74 @@
+/* The LILO character (voice stage) and the vector mark.
+   Stroke widths are in the 400-unit artwork space. */
+.lilo-figure {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+/* Ink is the accent gradient (per-instance <linearGradient>, see LiloFigure). */
+.lilo-stop-from {
+  stop-color: var(--accent);
+}
+.lilo-stop-to {
+  stop-color: var(--accent2);
+}
+.lilo-paper {
+  fill: var(--lilo-paper);
+}
+.lilo-shadow {
+  fill: var(--lilo-shadow);
+}
+.lilo-mouth {
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lilo-wave {
+  fill: none;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lilo-brow {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lilo-stroke-paper {
+  stroke: var(--lilo-paper);
+}
+.lilo-outline {
+  fill: none;
+  stroke-width: 8.5;
+  stroke-linejoin: round;
+}
+
+/* A soft accent halo behind the character. Static CSS on purpose: a filter on
+   the animated SVG would re-rasterize a blur every frame. */
+.orbwrap:has(> .lilo-stage) {
+  position: relative;
+}
+.orbwrap:has(> .lilo-stage)::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--c1a), transparent 72%);
+  opacity: 0.45;
+  pointer-events: none;
+  transition: background 0.6s var(--ease);
+}
+[data-theme="light"] .orbwrap:has(> .lilo-stage)::before {
+  opacity: 0.25;
+}
+.lilo-stage {
+  position: relative;
+}
+
+/* The startup splash is still gliding its own copy onto the stage. */
+:root[data-intro="on"] .lilo-stage {
+  visibility: hidden;
+}

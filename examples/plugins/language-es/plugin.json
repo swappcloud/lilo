@@ -1,0 +1,34 @@
+{
+  "id": "com.lilo.language.es",
+  "name": "Spanish language starter",
+  "description": "A small Spanish translation pack demonstrating plugin-owned interface languages. Untranslated phrases fall back to English.",
+  "localized": {
+    "es": {
+      "name": "Idioma español: ejemplo",
+      "description": "Un ejemplo de traducción de la interfaz. Las frases sin traducir se muestran en inglés."
+    }
+  },
+  "version": "1.0.0",
+  "api": 1,
+  "runtime": "quickjs",
+  "entry": "language.js",
+  "capabilities": [],
+  "languages": [
+    {
+      "tag": "es-ES",
+      "name": "Español (ejemplo parcial)",
+      "messages": {
+        "language.title": "Idioma",
+        "language.label": "Idioma de la interfaz y de la conversación",
+        "language.auto": "Automático (idioma del sistema)",
+        "plugins.title": "Plugins",
+        "plugins.status": "Estado",
+        "plugins.actions": "Acciones"
+      }
+    }
+  ],
+  "hosts": [
+    "desktop",
+    "daemon"
+  ]
+}

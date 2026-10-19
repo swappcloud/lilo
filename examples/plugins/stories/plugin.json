@@ -1,0 +1,15 @@
+{
+  "id": "com.lilo.stories",
+  "name": "Story time",
+  "version": "1.0.0",
+  "api": 1,
+  "hosts": ["desktop", "daemon"],
+  "runtime": "quickjs",
+  "entry": "stories.js",
+  "capabilities": ["storage:self", "conversation:read", "session:read"],
+  "description": "Gentle children's stories with requested themes, pacing and next-day continuation.",
+  "localized": {
+    "pt": {"name": "Hora da história", "description": "Histórias infantis tranquilas, com temas, duração aproximada e continuação no dia seguinte."},
+    "it": {"name": "L'ora delle storie", "description": "Storie delicate per bambini, con temi, durata indicativa e continuazione il giorno dopo."}
+  }
+}

@@ -1,0 +1,12 @@
+**
+!packages/
+!packages/daemon-browser-host/
+!packages/daemon-browser-host/package.json
+!packages/daemon-browser-host/src/
+!packages/daemon-browser-host/src/**
+!packages/phone-login/
+!packages/phone-login/driver.js
+!packages/phone-login/observer.js
+!.tmp/
+!.tmp/daemon-voice/
+!.tmp/daemon-voice/voice.js

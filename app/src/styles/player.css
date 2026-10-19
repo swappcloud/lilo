@@ -1,0 +1,161 @@
+/* --- now-playing bar -------------------------------------------------
+   Shares the dock with the voice controls, on its own row. The music is
+   visualized on the stage (LILO, orb or bars), so this stays a plain
+   transport: no meter, no duplicate animation for the eye to track. */
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 12px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--stroke);
+  animation: playerIn 0.28s var(--ease);
+}
+
+@keyframes playerIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.player-artwork { width: 48px; height: 48px; flex: none; object-fit: cover; border-radius: 8px; }
+.music-search-form { display: flex; align-items: end; gap: 10px; }
+.music-search-form label { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 8px; }
+.music-search-results { display: flex; flex-direction: column; gap: 12px; list-style: none; padding: 0; margin: 16px 0 0; }
+.music-search-results li { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.music-artwork { width: 60px; height: 60px; flex: none; border-radius: 8px; background: var(--glass2); overflow: hidden; }
+.music-artwork img { width: 100%; height: 100%; object-fit: cover; }
+.music-result-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.music-result-info strong { font-size: 14px; }
+.music-result-info span { font-size: 12px; }
+
+.player-state {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  max-width: min(52vw, 380px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+[data-theme="light"] .player-state {
+  color: #0d1117;
+}
+
+.player-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  max-width: min(52vw, 380px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+}
+
+.player-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  transition: 0.18s var(--ease);
+}
+
+.player-btn:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.06);
+  border-color: var(--c1a);
+}
+
+.player-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.player-btn:disabled {
+  opacity: 0.55;
+}
+
+.player-btn--primary {
+  width: 42px;
+  height: 42px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  box-shadow: 0 6px 20px var(--c1a);
+}
+
+/* Morphing play/pause: the icon swap is animated, not instantaneous. */
+.player-btn--primary svg {
+  animation: playerMorph 0.26s var(--ease);
+}
+
+@keyframes playerMorph {
+  from {
+    transform: scale(0.6) rotate(-12deg);
+    opacity: 0;
+  }
+}
+
+.player-btn--stop {
+  color: #ffb4ba;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="light"] .player-btn--stop {
+  color: var(--err-ink);
+}
+
+.player-btn--stop:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* A command in flight: the button breathes so a slow mpv round trip never
+   looks like a click that did nothing. */
+.player-btn.is-busy {
+  animation: playerBusy 0.85s var(--ease) infinite;
+}
+
+@keyframes playerBusy {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player,
+  .player-btn--primary svg,
+  .player-btn.is-busy {
+    animation: none;
+  }
+}
+
+/* The user's own switch wins over the media query above. */
+:root[data-animations="off"] .player,
+:root[data-animations="off"] .player-btn,
+:root[data-animations="off"] .player-btn--primary svg {
+  animation: none;
+  transition: none;
+}

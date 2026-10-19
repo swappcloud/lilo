@@ -1,0 +1,28 @@
+{
+  "waveshare_amoled": {
+    "sizeMm": [
+      48.99851582614559,
+      48.99851582614559,
+      12.719256053073352
+    ],
+    "sourceSha256": "d1d5de5a72683804c256f6e0b8665fd8cf1ef7eaf178f24caf0912bf495099c2",
+    "sourceUrl": "https://files.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75/ESP32-S3-Touch-AMOLED-1.75-3D.zip",
+    "solids": 666,
+    "presentationTriangles": {
+      "hardware": 40000
+    }
+  },
+  "respeaker_lite": {
+    "sizeMm": [
+      83.6064329680681,
+      34.00894017933336,
+      10.93100520327133
+    ],
+    "sourceSha256": "4a9585d0177dbcfc0efa7d740c8731d0848484c89ee47e4a0cc919afd65d1528",
+    "sourceUrl": "https://wiki.seeedstudio.com/reSpeaker_usb_v3/",
+    "solids": 484,
+    "presentationTriangles": {
+      "hardware": 30000
+    }
+  }
+}

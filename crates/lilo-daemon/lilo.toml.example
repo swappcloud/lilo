@@ -1,0 +1,26 @@
+# LILO headless daemon configuration.
+#
+# Copy to /etc/lilo/lilo.toml for a system service, or to the data directory
+# (on a Pi as the service user) — `lilo-daemon --help` shows where it looks.
+
+# Spoken phrase that starts a session. Its last word is the assistant name the
+# command templates use ("hello lilo" -> "lilo").
+wake_phrase = "lilo"
+
+# Languages to recognise. Empty or absent means every locale the registry has.
+locales = ["pt", "en"]
+
+# Where settings.json, accounts.json and plugins/ live. Default: the desktop
+# app's data directory for this user, so an app install configures the daemon
+# on the same machine. A system service points it at its own state directory:
+# data_dir = "/var/lib/lilo"
+
+# The setup window a fresh box opens: its own access point, a page, and the
+# captive-portal DNS that makes a phone show it. The defaults are the Raspberry
+# Pi's own (port 80, DNS 53); change the ports when testing on a machine where
+# those are taken.
+# [setup]
+# ap_ssid = "lilo-setup"
+# port = 80
+# dns_port = 53
+# ap_ip = "192.168.4.1"

@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "panel",
+  "description": "The companion's settings and history window: a view of the main window's state",
+  "windows": ["panel"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "opener:default",
+    "core:window:allow-show",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging"
+  ]
+}

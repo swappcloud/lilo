@@ -1,0 +1,14 @@
+.git
+node_modules
+**/node_modules
+dist
+target
+**/target
+.env*
+**/.env*
+.tmp/*
+!.tmp/daemon-web
+!.tmp/daemon-web/**
+!.tmp/daemon-voice
+!.tmp/daemon-voice/**
+hardware

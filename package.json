@@ -1,0 +1,52 @@
+{
+  "name": "lilo",
+  "private": true,
+  "workspaces": [
+    "packages/daemon-browser-host",
+    "packages/phone-login"
+  ],
+  "license": "GPL-3.0-only",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "LILO — an independent desktop interface with embedded web browsing for realtime voice services, using your own accounts.",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc && vite build",
+    "build:daemon": "tsc && vite build --config vite.daemon.config.ts",
+    "preview": "vite preview",
+    "test": "node scripts/test.mjs",
+    "test:watch": "vitest",
+    "test:linux": "sh scripts/test-linux.sh",
+    "test:pi": "sh scripts/pi-sim.sh test",
+    "pi:build": "sh scripts/pi-sim.sh build",
+    "pi:daemon": "sh scripts/pi-sim.sh daemon",
+    "pi:shell": "sh scripts/pi-sim.sh shell",
+    "typecheck": "tsc --noEmit",
+    "setup": "node scripts/setup.mjs",
+    "tauri": "tauri",
+    "dev:free": "node scripts/dev.mjs --free-only",
+    "tauri:build": "node scripts/build.mjs",
+    "version:bump": "node scripts/bump-version.mjs",
+    "build:daemon-voice": "vite build --config packages/daemon-browser-host/vite.voice.config.mjs",
+    "test:daemon-voice": "npm run build:daemon-voice && node --test scripts/daemon-voice.test.mjs"
+  },
+  "dependencies": {
+    "@noble/ciphers": "2.4.0",
+    "@tauri-apps/api": "~2.12.1",
+    "@tauri-apps/plugin-opener": "^2.5.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "~2.12.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "jsdom": "^30.1.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vitest": "^4.1.11"
+  }
+}

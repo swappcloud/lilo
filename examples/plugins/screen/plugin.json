@@ -1,0 +1,33 @@
+{
+  "id": "com.lilo.screen",
+  "name": "Screen sharing",
+  "version": "1.3.2",
+  "api": 1,
+  "capabilities": [
+    "screen:capture",
+    "exec:screencapture",
+    "exec:sips",
+    "exec:grim",
+    "exec:gnome-screenshot",
+    "exec:spectacle",
+    "exec:import",
+    "exec:powershell.exe"
+  ],
+  "runtime": "quickjs",
+  "entry": "screen.js",
+  "description": "Capture your screen and show it to the voice assistant during a conversation.",
+  "localized": {
+    "en": {
+      "name": "Screen sharing",
+      "description": "Capture your screen and show it to the voice assistant during a conversation."
+    },
+    "pt": {
+      "name": "Compartilhamento de tela",
+      "description": "Capture sua tela e mostre ao assistente de voz durante uma conversa."
+    },
+    "it": {
+      "name": "Condivisione schermo",
+      "description": "Cattura lo schermo e mostralo all’assistente vocale durante una conversazione."
+    }
+  }
+}

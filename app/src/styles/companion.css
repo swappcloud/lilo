@@ -1,0 +1,751 @@
+/* --- Desktop companion ---------------------------------------------
+   A transparent 820×500 window with only LILO in it, drawn in a 330px box at
+   its bottom (the 170px above are for a picture thought). Positions are logical
+   px inside that window; `features/companion/geometry.ts` holds the same
+   numbers. Only `[data-hit]` elements take the mouse — everywhere else the
+   click reaches the desktop underneath. */
+
+:root[data-shell="companion"]:not([data-window="panel"]),
+:root[data-shell="companion"]:not([data-window="panel"]) body {
+  background: transparent;
+}
+
+.companion {
+  /* A little overshoot, so things arrive instead of just appearing. */
+  --spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  /* Bubbles are ink tinted by the palette, edged and lit by it: whatever
+     colours the user picks, LILO's words wear them. */
+  --bubble-fill: color-mix(in srgb, var(--accent) 12%, #0a0f1e);
+  --bubble-text: #eef2fb;
+  --bubble-edge: linear-gradient(135deg, var(--accent), var(--accent2));
+  --bubble-glow: color-mix(in srgb, var(--accent) 34%, transparent);
+  --bubble-error: #ef4444;
+  /* The window is 170px taller than the 330px box LILO is drawn in; the room
+     above is for a picture thought. The box sits at the window's bottom, so
+     every position below stays as it was. */
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 330px;
+}
+[data-theme="light"] .companion {
+  /* A little overshoot, so things arrive instead of just appearing. */
+  --spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --bubble-fill: color-mix(in srgb, var(--accent) 6%, #ffffff);
+  --bubble-text: #0f172a;
+  --bubble-glow: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+/* The weather scene around LILO: the same canvas as the classic window,
+   faded into an oval so the desktop never shows a rectangle. It stays
+   click-through; only `[data-hit]` takes the mouse. */
+.companion .scene-canvas {
+  inset: auto 0 0 0;
+  height: 330px;
+  z-index: 0;
+  -webkit-mask-image: radial-gradient(ellipse 34% 50% at 50% 48%, #000 45%, transparent 100%);
+  mask-image: radial-gradient(ellipse 34% 50% at 50% 48%, #000 45%, transparent 100%);
+}
+
+/* LILO: a 300px box whose body circle sits at (410, 159), r 88.5. */
+.companion-mascot {
+  position: absolute;
+  left: 260px;
+  top: 12px;
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+}
+/* The state glow behind LILO: a soft halo, never a drawn ring. Each state has
+   its own motion, so the state reads without a word on screen. */
+.companion-mascot::before,
+.companion-mascot::after {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--c1a), transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease), background 0.6s var(--ease);
+}
+.companion-mascot::before {
+  opacity: 0.4;
+}
+
+/* Asleep: the wake word is off or blocked, only a click wakes LILO. */
+.companion:has([data-state="idle"][data-wake="off"]) .companion-mascot::before {
+  opacity: 0.12;
+}
+/* Waiting for its name: a slow, quiet breath. */
+.companion:has([data-state="idle"][data-wake="armed"]) .companion-mascot::before {
+  animation: companion-breathe-soft 4.2s ease-in-out infinite;
+}
+/* Heard and connecting: waves of glow spreading out. */
+.companion:has([data-state="thinking"]) .companion-mascot::before {
+  animation: companion-breathe 0.9s ease-in-out infinite;
+}
+.companion:has([data-state="thinking"]) .companion-mascot::after {
+  animation: companion-wave 1.2s var(--ease) infinite;
+}
+/* The user's turn: a steady, fuller breath. */
+.companion:has([data-state="listening"]) .companion-mascot::before {
+  animation: companion-breathe 2.4s ease-in-out infinite;
+}
+.companion:has([data-state="speaking"]) .companion-mascot::before {
+  opacity: 0.7;
+  animation: companion-talk 0.7s ease-in-out infinite;
+}
+/* Connected but the mic is closed: held still and dimmed, never the
+   listening breath, so a glance says LILO cannot hear you right now. */
+.companion:has([data-state="muted"]) .companion-mascot::before {
+  background: radial-gradient(closest-side, rgba(244, 63, 94, 0.4), transparent 72%);
+  opacity: 0.22;
+  animation: none;
+}
+.companion:has([data-state="music"]) .companion-mascot::before {
+  background: radial-gradient(closest-side, var(--c2a, var(--c1a)), transparent 72%);
+  opacity: 0.5;
+}
+.companion:has([data-state="error"]) .companion-mascot::before {
+  background: radial-gradient(closest-side, rgba(239, 68, 68, 0.55), transparent 72%);
+  opacity: 0.8;
+}
+.companion:has([data-state="error"]) .companion-mascot {
+  animation: companion-shake 0.42s var(--ease) 1;
+}
+
+/* The clickable, draggable part: the body circle, not the empty corners. */
+.companion-body {
+  position: absolute;
+  left: 321.5px;
+  top: 70.5px;
+  width: 177px;
+  height: 177px;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: none;
+}
+/* No focus ring: on a transparent desktop it reads as a stray circle. */
+.companion-body:focus,
+.companion-body:focus-visible {
+  outline: none;
+}
+
+.companion-badge {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.companion-badge--muted {
+  left: 461px;
+  top: 210px;
+  width: 24px;
+  height: 24px;
+  color: #fff;
+  background: linear-gradient(135deg, #f43f5e, #f97316);
+  box-shadow: 0 2px 10px rgba(244, 63, 94, 0.45);
+}
+/* --- media controls: five circles along the lower contour ------------ */
+.companion-ring {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ring-btn {
+  --size: 30px;
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--accent);
+  /* The same ink and palette edge as the bubbles. */
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--bubble-fill), var(--bubble-fill)) padding-box,
+    var(--bubble-edge) border-box;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  transition:
+    transform 0.22s var(--spring),
+    box-shadow 0.2s var(--ease),
+    color 0.2s var(--ease),
+    filter 0.2s var(--ease);
+  animation: companion-ring-in 0.5s var(--spring) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+/* Back into LILO in reverse order, the last one out first. */
+.companion-ring[data-leaving="true"] .ring-btn {
+  pointer-events: none;
+  animation: companion-ring-out 0.28s var(--ease) forwards;
+  animation-delay: calc((4 - var(--i, 0)) * 35ms);
+}
+/* `data-hover` is the cursor as Rust sees it: an unfocused window gets no
+   `:hover` on macOS. The button lifts, fills with the palette and glows. */
+.ring-btn:hover,
+.ring-btn[data-hover] {
+  color: #fff;
+  background:
+    linear-gradient(135deg, var(--accent), var(--accent2)) padding-box,
+    var(--bubble-edge) border-box;
+  transform: translateY(-3px) scale(1.14);
+  box-shadow: 0 8px 22px var(--c1a), 0 0 18px var(--bubble-glow);
+}
+.ring-btn--toggle:hover,
+.ring-btn--toggle[data-hover] {
+  filter: brightness(1.12);
+}
+/* Every other button on the desktop answers the emulated cursor too. */
+.companion button[data-hover]:not(.ring-btn) {
+  filter: brightness(1.18);
+}
+.ring-btn:active {
+  transform: scale(0.94);
+}
+.ring-btn.on {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+}
+.ring-btn--previous { left: 314px; top: 267px; }
+.ring-btn--volume { left: 362px; top: 278px; }
+.ring-btn--toggle {
+  --size: 40px;
+  left: 410px;
+  top: 285px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  box-shadow: 0 6px 20px var(--c1a);
+}
+.ring-btn--next { left: 458px; top: 278px; }
+.ring-btn--queue { left: 506px; top: 267px; }
+
+/* --- bubbles -----------------------------------------------------------
+   Beside LILO's head, on the side with room; they grow upward from a fixed
+   bottom so what points at LILO stays put. Speech is ink with a palette
+   edge and a curved tail to LILO's mouth, like the tails of its mark; a
+   thought is a cloud rising from its head; controls are a plain card. */
+.companion-bubble {
+  position: absolute;
+  bottom: 180px;
+  min-width: 120px;
+  max-width: 290px;
+  border-radius: 22px;
+  color: var(--bubble-text);
+  animation: companion-bubble-in 0.46s var(--spring) backwards;
+}
+/* Streaming speech stays readable from the first frame. */
+.companion-bubble--speech {
+  animation: companion-speech-in 0.16s var(--ease) both;
+}
+@keyframes companion-speech-in {
+  from { transform: translateY(3px); }
+}
+.companion[data-side="right"] .companion-bubble {
+  left: 512px;
+  transform-origin: 0% 100%;
+}
+.companion[data-side="left"] .companion-bubble {
+  right: 512px;
+  transform-origin: 100% 100%;
+}
+
+/* Speech and controls: a gradient edge drawn by the border box under an
+   opaque fill, and a soft glow in the palette. */
+.companion-bubble--speech {
+  max-width: 310px;
+  /* Left to right, so each side edge is one colour and the tail, drawn in
+     that colour, continues it without a seam. */
+  --bubble-edge: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+/* The name stays; only the words scroll. */
+.companion-bubble--speech .companion-bubble-inner {
+  max-height: none;
+  padding: 10px 15px 11px;
+}
+.companion-bubble--speech,
+.companion-bubble--tool {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--bubble-fill), var(--bubble-fill)) padding-box,
+    var(--bubble-edge) border-box;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32), 0 0 30px var(--bubble-glow);
+}
+/* The corner under the tail is square: the tail covers it, and its lower
+   edge carries the bubble's bottom edge straight out to the tip. */
+.companion[data-side="right"] .companion-bubble--speech {
+  border-bottom-left-radius: 0;
+}
+.companion[data-side="left"] .companion-bubble--speech {
+  border-bottom-right-radius: 0;
+}
+/* In tail units the bubble's border runs along x = 13.75 and y = 25.25. */
+.bubble-tail {
+  position: absolute;
+  bottom: -1.5px;
+  width: 30px;
+  height: 26px;
+  overflow: visible;
+}
+.companion[data-side="left"] .bubble-tail {
+  right: -17px;
+}
+.companion[data-side="right"] .bubble-tail {
+  left: -17px;
+  transform: scaleX(-1);
+}
+.bubble-tail .tail-fill {
+  fill: var(--bubble-fill);
+}
+.bubble-tail .tail-edge {
+  fill: none;
+  stroke: var(--accent2);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.companion[data-side="right"] .bubble-tail .tail-edge {
+  stroke: var(--accent);
+}
+
+/* Who is talking, and that they still are: LILO's name beside a waveform
+   that moves while the voice does. */
+.bubble-voice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  background: var(--bubble-edge);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bubble-wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 12px;
+}
+.bubble-wave i {
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--bubble-edge);
+  transform: scaleY(var(--h, 0.5));
+}
+.bubble-wave i:nth-child(1) { --h: 0.4; }
+.bubble-wave i:nth-child(2) { --h: 0.85; }
+.bubble-wave i:nth-child(3) { --h: 0.6; }
+.bubble-wave i:nth-child(4) { --h: 1; }
+.bubble-wave i:nth-child(5) { --h: 0.5; }
+.bubble-wave i:nth-child(6) { --h: 0.75; }
+.bubble-wave i:nth-child(7) { --h: 0.35; }
+.bubble-wave[data-live="true"] i {
+  animation: companion-bar 0.9s ease-in-out infinite;
+  animation-delay: calc(var(--h) * -0.9s);
+}
+/* Each word arrives out of a little blur, as the voice reaches it. */
+.bubble-word {
+  display: inline-block;
+  max-width: 100%;
+  white-space: pre-wrap;
+}
+/* The words just spoken, lit in the palette until newer ones arrive. */
+.bubble-fresh {
+  background: linear-gradient(90deg, var(--bubble-text), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Thought: a cloud — a body with bumps on top. Every piece draws its ring
+   in one layer and its fill in the layer above, so the rings merge into one
+   outline and no seam survives where the pieces overlap. */
+.companion-bubble--thought {
+  bottom: 204px;
+  min-width: 0;
+  --cloud-edge: color-mix(in srgb, var(--accent) 50%, var(--accent2));
+}
+.companion-bubble--thought.companion-bubble--error {
+  --cloud-edge: var(--bubble-error);
+}
+/* A picture LILO made: the same thought, at the same height and with the same
+   trail from LILO, grown upward into the room the window keeps above it. */
+.companion-bubble--thought.companion-bubble--picture {
+  max-width: 300px;
+}
+/* The inner box is capped for text; a picture sizes it, so the cloud wraps
+   the whole picture instead of the picture spilling over its top. Higher
+   specificity than the thought rule, which sets its own padding. */
+.companion-bubble--thought.companion-bubble--picture .companion-bubble-inner {
+  max-height: none;
+  padding: 10px;
+  align-items: center;
+}
+.bubble-picture {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.bubble-picture img {
+  display: block;
+  max-width: 280px;
+  max-height: 236px;
+  border-radius: 14px;
+  object-fit: contain;
+}
+.companion-bubble--thought .companion-bubble-inner {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border-radius: 22px;
+  padding: 10px 16px;
+}
+.cloud-bump,
+.cloud-puff {
+  position: absolute;
+  border-radius: 50%;
+}
+.companion-bubble--thought .companion-bubble-inner::before,
+.companion-bubble--thought .companion-bubble-inner::after,
+.cloud-bump::before,
+.cloud-bump::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.companion-bubble--thought .companion-bubble-inner::before,
+.cloud-bump::before {
+  z-index: -2;
+  box-shadow: 0 0 0 1.5px var(--cloud-edge), 0 0 14px var(--bubble-glow);
+}
+.companion-bubble--thought .companion-bubble-inner::after,
+.cloud-bump::after {
+  z-index: -1;
+  background: var(--bubble-fill);
+}
+.cloud-bump:nth-of-type(1) { left: 10px; top: -10px; width: 28px; height: 28px; }
+.cloud-bump:nth-of-type(2) { left: 32px; top: -16px; width: 36px; height: 36px; }
+.cloud-bump:nth-of-type(3) { left: 62px; top: -9px; width: 28px; height: 28px; }
+/* The trail of little clouds back to LILO's head — only while it thinks. */
+.cloud-puff {
+  background: var(--bubble-fill);
+  box-shadow: 0 0 0 1.5px var(--cloud-edge), 0 0 10px var(--bubble-glow);
+  animation: companion-puff 1.6s ease-in-out infinite;
+}
+.cloud-puff--near { bottom: -21px; width: 14px; height: 14px; }
+.cloud-puff--far { bottom: -36px; width: 8px; height: 8px; animation-delay: -0.4s; }
+.companion[data-side="right"] .cloud-puff--near { left: 4px; }
+.companion[data-side="right"] .cloud-puff--far { left: -9px; }
+.companion[data-side="left"] .cloud-puff--near { right: 4px; }
+.companion[data-side="left"] .cloud-puff--far { right: -9px; }
+.companion-bubble--thought .bubble-text {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bubble-icon {
+  flex: none;
+  color: var(--accent2);
+}
+.companion-bubble--error .bubble-icon {
+  color: var(--bubble-error);
+}
+.thinking {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.thinking-hmm {
+  font-size: 11.5px;
+  font-style: italic;
+  font-weight: 600;
+  opacity: 0.72;
+}
+.thinking-dots {
+  display: flex;
+  gap: 6px;
+  padding: 4px 0 2px;
+}
+.thinking-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  animation: companion-dot 1.1s ease-in-out infinite;
+}
+.thinking-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.thinking-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.companion-bubble[data-leaving="true"] {
+  pointer-events: none;
+  animation: companion-bubble-out 0.32s var(--ease) forwards;
+}
+.companion-bubble-inner {
+  max-height: 140px;
+  padding: 12px 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+/* A long reply keeps its newest lines in view and fades out at the top,
+   under LILO's name, which stays. */
+.bubble-scroll {
+  /* Four lines at most, the newest; the fade sits in this padding, so a
+     short reply never loses a pixel. */
+  max-height: 90px;
+  margin-top: -12px;
+  padding-top: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12px);
+}
+.bubble-text {
+  font-size: 13.5px;
+  line-height: 1.45;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.companion-bubble--tool {
+  min-width: 220px;
+}
+
+/* The confirm prompt reuses ConfirmBar; the bubble is its frame here. */
+.companion-bubble .confirmbar {
+  position: static;
+  transform: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+.companion-bubble .confirmbar-text .small {
+  max-width: 250px;
+}
+.companion-bubble .confirmbar-actions {
+  justify-content: flex-end;
+}
+
+.bubble-volume .slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.bubble-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.bubble-kicker {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.bubble-title {
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bubble-sub {
+  font-size: 12px;
+  color: var(--muted, #94a3b8);
+}
+.bubble-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* --- panel window: settings and history beside the companion ----------
+   On the system's material (macOS) the page is see-through and the native
+   blur shows; elsewhere the body keeps its opaque background. */
+:root[data-window="panel"][data-material="on"],
+:root[data-window="panel"][data-material="on"] body {
+  background: transparent;
+}
+.panel-window {
+  position: fixed;
+  inset: 0;
+}
+.panel-window .panel {
+  inset: 0;
+  width: 100%;
+  border-radius: 0;
+  border: none;
+  transform: none;
+}
+
+/* Dedicated panels use the native window frame and retain section padding. */
+:root[data-window="panel"] .settings-overlay {
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-window="panel"] .settings-modal {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The bubble grows out of its tail, beside LILO's mouth, and shrinks back
+   into it; the transform origin is the tail's corner. */
+@keyframes companion-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.55);
+  }
+  40% {
+    opacity: 1;
+  }
+}
+@keyframes companion-bubble-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.7);
+  }
+}
+@keyframes companion-ring-in {
+  from {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.3);
+  }
+}
+@keyframes companion-ring-out {
+  to {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.3);
+  }
+}
+@keyframes companion-breathe {
+  0%,
+  100% {
+    opacity: 0.32;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+@keyframes companion-breathe-soft {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.42;
+    transform: scale(1.02);
+  }
+}
+@keyframes companion-wave {
+  from {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+@keyframes companion-talk {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+@keyframes companion-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+@keyframes companion-bar {
+  0%,
+  100% {
+    transform: scaleY(calc(var(--h) * 0.45));
+  }
+  50% {
+    transform: scaleY(var(--h));
+  }
+}
+@keyframes companion-puff {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes companion-shake {
+  20% { transform: translateX(-5px); }
+  45% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
+}
+
+[data-animations="off"] .companion *,
+[data-animations="off"] .companion *::before,
+[data-animations="off"] .companion *::after {
+  animation: none !important;
+}
+[data-animations="off"] .companion [data-leaving="true"],
+[data-animations="off"] .companion [data-leaving="true"] .ring-btn {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .companion *,
+  .companion *::before,
+  .companion *::after {
+    animation: none !important;
+  }
+  .companion [data-leaving="true"],
+  .companion [data-leaving="true"] .ring-btn {
+    opacity: 0;
+  }
+}

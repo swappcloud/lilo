@@ -1,0 +1,21 @@
+[package]
+name = "lilo-daemon"
+description = "LILO with no window: stores, tools, plugins and the command router, for a headless box."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+lilo-core = { path = "../lilo-core" }
+anyhow.workspace = true
+dirs.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+toml.workspace = true
+tiny_http = "0.12"
+
+uuid.workspace = true

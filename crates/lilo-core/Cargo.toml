@@ -1,0 +1,40 @@
+[package]
+name = "lilo-core"
+description = "LILO command protocol, tool registry and media playback — no UI, no Tauri."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+reqwest.workspace = true
+tokio.workspace = true
+sha2.workspace = true
+uuid.workspace = true
+base64.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true
+iana-time-zone.workspace = true
+rquickjs = "0.14.0"
+
+# `lilo.screenshot`: in-process GDI capture, so the screen plugin does not have
+# to spawn PowerShell (antivirus engines block that script as spyware).
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+  "Win32_UI_Accessibility",
+  "Win32_UI_Shell",
+  "Win32_System_Com",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_Storage_FileSystem",
+    "Win32_Graphics_Gdi",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_System_JobObjects",
+  "Win32_System_Threading",
+  "Win32_System_Console",
+  "Win32_Security",
+] }
+jpeg-encoder = "0.6"

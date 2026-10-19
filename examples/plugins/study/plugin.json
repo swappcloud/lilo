@@ -1,0 +1,33 @@
+{
+  "id": "com.lilo.study",
+  "name": "Language study",
+  "version": "1.4.2",
+  "api": 1,
+  "runtime": "quickjs",
+  "entry": "study.js",
+  "capabilities": [
+    "storage:self",
+    "conversation:read",
+    "session:read",
+    "interaction:self"
+  ],
+  "description": "A voice-first language tutor with local learning memory and daily continuity.",
+  "localized": {
+    "en": {
+      "name": "Language study",
+      "description": "Build your study plan through conversation and resume with local learning memory."
+    },
+    "pt": {
+      "name": "Estudo de línguas",
+      "description": "Construa seu plano por voz e retome com uma memória local do aprendizado."
+    },
+    "it": {
+      "name": "Studio delle lingue",
+      "description": "Crea il tuo piano a voce e riprendi con una memoria locale dello studio."
+    }
+  },
+  "hosts": [
+    "desktop",
+    "daemon"
+  ]
+}

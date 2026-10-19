@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#070b14" />
+<title>LILO — __NAME_HTML__</title>
+<style>
+  :root {
+    --accent: __ACCENT__;
+    --accent2: __ACCENT2__;
+    --bg: #070b14;
+    --glass: rgba(255, 255, 255, 0.055);
+    --glass2: rgba(255, 255, 255, 0.09);
+    --stroke: rgba(255, 255, 255, 0.12);
+    --text: #f1f5f9;
+    --muted: #8fa0b8;
+    --paper: #ffffff;
+    --ok: #10b981;
+    --warn: #f59e0b;
+    --err: #ef4444;
+    --r: 20px;
+    --r-sm: 14px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #eceef0;
+      --glass: rgba(255, 255, 255, 0.62);
+      --glass2: rgba(255, 255, 255, 0.85);
+      --stroke: rgba(15, 23, 42, 0.1);
+      --text: #0d1117;
+      --muted: #5b6470;
+      --paper: #ffffff;
+      --warn: #b45309;
+      --err: #b91c1c;
+      color-scheme: light;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    padding: max(28px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before, body::after {
+    content: "";
+    position: fixed;
+    width: 70vmax;
+    height: 70vmax;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.28;
+    z-index: -1;
+    pointer-events: none;
+  }
+  body::before { background: var(--accent); top: -35vmax; left: -25vmax; }
+  body::after { background: var(--accent2); bottom: -40vmax; right: -30vmax; }
+  main { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 22px; }
+
+  header { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; margin-top: 8px; }
+  .mark { width: 76px; height: 76px; filter: drop-shadow(0 10px 28px color-mix(in srgb, var(--accent) 45%, transparent)); }
+  .mark .paper { fill: var(--paper); }
+  .mark .ink-stroke { stroke: url(#ink); }
+  .mark .paper-stroke { stroke: var(--paper); }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .sub { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0; max-width: 32ch; }
+
+  .steps { display: flex; align-items: center; gap: 8px; justify-content: center; }
+  .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--stroke); transition: all 0.35s var(--ease); }
+  .dot.on { width: 26px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .dot.past { background: color-mix(in srgb, var(--accent) 60%, var(--accent2)); }
+
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--stroke);
+    border-radius: var(--r);
+    padding: 22px 20px;
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: rise 0.45s var(--ease);
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .card[hidden] { display: none; }
+  .seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--r-sm);
+    background: var(--glass2);
+    border: 1px solid var(--stroke);
+    margin-bottom: 4px;
+  }
+  .seg[hidden] { display: none; }
+  .seg button {
+    appearance: none;
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 8px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.25s var(--ease), color 0.25s var(--ease);
+  }
+  .seg button[aria-selected="true"] {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  label { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .hint { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0; }
+  .page-says {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text);
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--glass2);
+    border-left: 3px solid var(--accent);
+  }
+  .page-says:empty { display: none; }
+  .hint b { color: var(--text); font-weight: 600; }
+
+  input.field {
+    width: 100%;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--stroke);
+    background: var(--glass2);
+    color: var(--text);
+    padding: 15px 16px;
+    font-size: 17px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input.field:focus {
+    border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  input.field.code {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    padding-left: calc(16px + 0.35em);
+    font-variant-numeric: tabular-nums;
+  }
+  .error { color: var(--err); font-size: 13px; line-height: 1.45; margin: -4px 0 0; }
+  .error:empty { display: none; }
+
+  button.primary {
+    appearance: none;
+    border: 0;
+    border-radius: var(--r-sm);
+    padding: 15px 18px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 38%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.15s var(--ease), opacity 0.2s;
+  }
+  button.primary:active { transform: scale(0.98); }
+  button.primary:disabled { opacity: 0.6; cursor: default; }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2.5px solid currentColor;
+    border-right-color: transparent;
+    animation: spin 0.8s linear infinite;
+    flex: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .working { flex-direction: row; align-items: center; gap: 14px; }
+  .working .spinner { color: var(--accent); width: 22px; height: 22px; }
+  .working p { margin: 0; font-size: 15px; line-height: 1.45; }
+
+  .notice { border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+  .notice p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--warn); }
+
+  .tip { gap: 6px; padding: 16px 18px; border-color: color-mix(in srgb, var(--accent) 35%, var(--stroke)); }
+  .tip p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .tip .tip-title { color: var(--text); font-weight: 600; font-size: 14px; }
+  .tip.alert { border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+  .tip.alert .tip-title { color: var(--warn); }
+  .done { align-items: center; text-align: center; padding: 30px 20px; }
+  .check {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 40%, transparent);
+    animation: pop 0.5s var(--ease);
+  }
+  @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+  .check path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw 0.45s 0.2s var(--ease) forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .done h2 { margin: 6px 0 0; font-size: 20px; }
+  .done p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6; display: flex; flex-direction: column; gap: 8px; }
+  footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+  .lock { display: inline-flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <svg class="mark" viewBox="57 53 286 286" aria-hidden="true">
+      <defs>
+        <linearGradient id="ink" gradientUnits="userSpaceOnUse" x1="90" y1="70" x2="310" y2="330">
+          <stop offset="0" stop-color="var(--accent)" style="stop-color: var(--accent)" />
+          <stop offset="1" stop-color="var(--accent2)" style="stop-color: var(--accent2)" />
+        </linearGradient>
+        <clipPath id="split"><path d="M200,-80L200,78 A59,59 0 0 0 200,196 A59,59 0 0 1 200,314 L200,480L480,480L480,-80Z" /></clipPath>
+      </defs>
+      <path class="paper" d="M260.8,94.9Q275.5,86.1 300.6,80.2 Q293.6,116.6 310.9,155.6A118,118 0 0 1 130.6,291.5Q115.8,299.4 86.5,309.5 Q102.2,270.2 88.4,234.4A118,118 0 0 1 260.8,94.9Z" />
+      <path fill="url(#ink)" clip-path="url(#split)" d="M260.8,94.9Q275.5,86.1 300.6,80.2 Q293.6,116.6 310.9,155.6A118,118 0 0 1 130.6,291.5Q115.8,299.4 86.5,309.5 Q102.2,270.2 88.4,234.4A118,118 0 0 1 260.8,94.9Z" />
+      <g fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+        <path class="paper-stroke" d="M187,146 L197.3,146 L200.5,143.3 L203.7,149.3 L207,138.5 L210.5,155.3 L214,131 L217.5,159.5 L221,137.8 L224.3,150.5 L227.5,143.6 L230.7,146 L241,146" />
+        <path class="ink-stroke" d="M161,244 L171.3,244 L174.5,241.3 L177.7,247.3 L181,236.5 L184.5,253.3 L188,229 L191.5,257.5 L195,235.8 L198.3,248.5 L201.5,241.6 L204.7,244 L215,244" />
+      </g>
+      <path fill="none" class="ink-stroke" stroke-width="12" stroke-linejoin="round" d="M260.8,94.9Q275.5,86.1 300.6,80.2 Q293.6,116.6 310.9,155.6A118,118 0 0 1 130.6,291.5Q115.8,299.4 86.5,309.5 Q102.2,270.2 88.4,234.4A118,118 0 0 1 260.8,94.9Z" />
+    </svg>
+    <h1 id="title"></h1>
+    <p class="sub" id="subtitle"></p>
+    <div class="steps" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  </header>
+
+  <section class="card working" id="working">
+    <span class="spinner"></span>
+    <p id="working-text"></p>
+  </section>
+
+  <form class="card" id="form" hidden novalidate>
+    <div class="seg" id="seg" role="tablist" hidden>
+      <button type="button" role="tab" data-way="email" id="way-email"></button>
+      <button type="button" role="tab" data-way="phone" id="way-phone"></button>
+    </div>
+    <label for="value" id="label"></label>
+    <p class="hint" id="hint"></p>
+    <p class="page-says" id="page-says"></p>
+    <input class="field" id="value" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" />
+    <p class="error" id="error" role="alert"></p>
+    <button class="primary" type="submit" id="submit"></button>
+  </form>
+
+  <section class="card tip" id="tip" hidden>
+    <p class="tip-title" id="tip-title"></p>
+    <p id="tip-text"></p>
+  </section>
+
+  <section class="card notice" id="notice" hidden>
+    <p id="notice-text"></p>
+  </section>
+
+  <section class="card done" id="done" hidden>
+    <div class="check">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+    </div>
+    <h2 id="done-title"></h2>
+    <p id="done-text"></p>
+  </section>
+
+  <footer>
+    <span class="lock" id="privacy"></span>
+    __PASTE_LINK__
+  </footer>
+</main>
+<script>
+(function () {
+  'use strict';
+  var NAME = __NAME_JSON__;
+  var PHONES = __PHONES__;
+  var KEY = new URLSearchParams(location.search).get('k') || '';
+
+  var STRINGS = {
+    en: {
+      title: 'Sign in to {name}',
+      subtitle: 'Your PC signs in by itself — this phone only answers what it asks.',
+      opening: 'Opening {name} on your PC…',
+      working: 'Working on your PC…',
+      checking: 'Checking with {name}…',
+      email: ['E-mail', 'The e-mail of your {name} account.', 'Continue'],
+      code: ['Code', 'Type the code {name} asks for — from the e-mail, a text message or your authenticator app.', 'Sign in'],
+      password: ['Password', 'Your {name} password. It goes over your Wi-Fi straight to the PC.', 'Sign in'],
+      challenge: '{name} wants a quick check. Finish it on the PC screen — this page follows along.',
+      unrecognized: "LILO could not find the sign-in form. Check the {name} window on your PC — this page will resume when the form is available.",
+      doneTitle: "You're in",
+      doneText: 'You can close this tab and return to LILO on your PC.',
+      closing: 'Trying to close this page in 5 seconds…',
+      unreachable: 'Cannot reach the PC. Same Wi-Fi?',
+      privacy: 'Use trusted Wi-Fi · local connection uses HTTP',
+      tipTitle: 'Signed up with Google, Apple or Microsoft?',
+      tipText: "This phone can enter your account e-mail, password and verification codes. If you use Google, Apple or Microsoft, check whether {name} lets you add a password to that same account. Otherwise, finish social sign-in on the PC or use session paste when available. Never enter your Google, Apple or Microsoft password here.",
+      signupTitle: 'This e-mail or number is on no {name} account',
+      signupText: '{name} offered to create a new account, and the phone never does that. Use the e-mail or number your account already has, or add this number to it first (Settings, Security).',
+      socialTitle: "This account uses social sign-in",
+      socialText: "This phone cannot complete social sign-in. Finish it on the PC, or use session paste when available. Use e-mail and password here only if {name} supports them for your existing account.",
+      paste: 'Paste a session instead',
+      invalidEmail: 'That does not look like an e-mail.',
+      empty: 'Fill this in first.',
+      wayEmail: 'E-mail',
+      wayPhone: 'Phone number',
+      phone: ['Phone number', 'The number on your {name} account, with the country code. {name} texts a code to it.', 'Send code'],
+      invalidPhone: 'Use the country code, like +39.'
+    },
+    pt: {
+      title: 'Entrar no {name}',
+      subtitle: 'O seu PC entra sozinho — este celular só responde o que ele pede.',
+      opening: 'Abrindo o {name} no seu PC…',
+      working: 'Trabalhando no seu PC…',
+      checking: 'Verificando com o {name}…',
+      email: ['E-mail', 'O e-mail da sua conta {name}.', 'Continuar'],
+      code: ['Código', 'Digite o código que o {name} pede — do e-mail, do SMS ou do app autenticador.', 'Entrar'],
+      password: ['Senha', 'A sua senha do {name}. Ela vai pelo seu Wi-Fi direto para o PC.', 'Entrar'],
+      challenge: 'O {name} quer uma verificação rápida. Conclua na tela do PC — esta página acompanha.',
+      unrecognized: "O LILO não encontrou o formulário de login. Confira a janela do {name} no PC — esta página continuará quando o formulário estiver disponível.",
+      doneTitle: 'Pronto, conectado',
+      doneText: 'Pode fechar esta aba e voltar para o LILO no seu PC.',
+      closing: 'Tentando fechar esta página em 5 segundos…',
+      unreachable: 'Não foi possível falar com o PC. Mesmo Wi-Fi?',
+      privacy: 'Use Wi-Fi confiável · conexão local por HTTP',
+      tipTitle: 'Criou a conta com Google, Apple ou Microsoft?',
+      tipText: "Este celular pode enviar o e-mail, a senha da conta e os códigos de verificação. Se você usa Google, Apple ou Microsoft, verifique se o {name} permite adicionar uma senha à mesma conta. Caso contrário, conclua o login social no PC ou cole uma sessão quando disponível. Nunca digite aqui a senha do Google, Apple ou Microsoft.",
+      signupTitle: 'Este e-mail ou número não está em nenhuma conta {name}',
+      signupText: 'O {name} ofereceu criar uma conta nova, e o celular nunca faz isso. Use o e-mail ou número que a sua conta já tem, ou adicione este número a ela antes (Configurações, Segurança).',
+      socialTitle: "Esta conta usa login social",
+      socialText: "Este celular não consegue concluir o login social. Conclua no PC ou cole uma sessão quando disponível. Use e-mail e senha aqui somente se o {name} oferecer essa opção para sua conta existente.",
+      paste: 'Colar uma sessão em vez disso',
+      invalidEmail: 'Isso não parece um e-mail.',
+      empty: 'Preencha primeiro.',
+      wayEmail: 'E-mail',
+      wayPhone: 'Celular',
+      phone: ['Celular', 'O número da sua conta {name}, com o código do país. O {name} manda um código por SMS.', 'Enviar código'],
+      invalidPhone: 'Use o código do país, como +55.'
+    },
+    it: {
+      title: 'Accedi a {name}',
+      subtitle: 'Il PC accede da solo — questo telefono risponde solo a ciò che chiede.',
+      opening: 'Apertura di {name} sul PC…',
+      working: 'Al lavoro sul PC…',
+      checking: 'Verifica con {name}…',
+      email: ['E-mail', "L'e-mail del tuo account {name}.", 'Continua'],
+      code: ['Codice', 'Scrivi il codice che {name} chiede — dall\'e-mail, da un SMS o dall\'app di autenticazione.', 'Accedi'],
+      password: ['Password', 'La tua password di {name}. Viaggia sul tuo Wi-Fi direttamente al PC.', 'Accedi'],
+      challenge: '{name} vuole una verifica rapida. Completala sullo schermo del PC — questa pagina segue.',
+      unrecognized: "LILO non ha trovato il modulo di accesso. Controlla la finestra di {name} sul PC — questa pagina riprenderà quando il modulo sarà disponibile.",
+      doneTitle: 'Fatto, sei dentro',
+      doneText: 'Puoi chiudere questa scheda e tornare a LILO sul PC.',
+      closing: 'Tentativo di chiudere questa pagina tra 5 secondi…',
+      unreachable: 'Il PC non risponde. Stesso Wi-Fi?',
+      privacy: 'Usa una rete Wi-Fi fidata · connessione locale HTTP',
+      tipTitle: 'Registrato con Google, Apple o Microsoft?',
+      tipText: "Questo telefono può inviare e-mail, password e codici di verifica. Se usi Google, Apple o Microsoft, verifica se {name} permette di aggiungere una password allo stesso account. Altrimenti completa l'accesso sul PC o incolla una sessione quando disponibile. Non inserire qui la password di Google, Apple o Microsoft.",
+      signupTitle: 'Questa e-mail o questo numero non è su nessun account {name}',
+      signupText: '{name} ha proposto di creare un nuovo account, e il telefono non lo fa mai. Usa l\'e-mail o il numero che il tuo account ha già, oppure aggiungi prima questo numero (Impostazioni, Sicurezza).',
+      socialTitle: "Questo account usa un accesso social",
+      socialText: "Questo telefono non può completare l'accesso social. Completa sul PC o incolla una sessione quando disponibile. Usa e-mail e password qui solo se {name} li supporta per il tuo account esistente.",
+      paste: 'Incolla invece una sessione',
+      invalidEmail: 'Non sembra un indirizzo e-mail.',
+      empty: 'Compila prima questo campo.',
+      wayEmail: 'E-mail',
+      wayPhone: 'Telefono',
+      phone: ['Telefono', 'Il numero del tuo account {name}, con il prefisso internazionale. {name} ti manda un codice via SMS.', 'Invia codice'],
+      invalidPhone: 'Usa il prefisso internazionale, come +39.'
+    }
+  };
+  var lang = (navigator.language || 'en').slice(0, 2).toLowerCase();
+  var S = STRINGS[lang] || STRINGS.en;
+  document.documentElement.lang = STRINGS[lang] ? lang : 'en';
+  var escape = function (text) {
+    return String(text).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var fill = function (text, vars) {
+    return text.replace(/\{(\w+)\}/g, function (_, k) { return vars && k in vars ? vars[k] : k === 'name' ? NAME : ''; });
+  };
+  var $ = function (id) { return document.getElementById(id); };
+
+  var INPUTS = {
+    email: { type: 'email', auto: 'email', mode: 'email', cls: '' },
+    code: { type: 'text', auto: 'one-time-code', mode: 'numeric', cls: 'code' },
+    password: { type: 'password', auto: 'current-password', mode: 'text', cls: '' },
+    phone: { type: 'tel', auto: 'tel', mode: 'tel', cls: '' }
+  };
+  var STEP_INDEX = { email: 0, phone: 0, password: 1, code: 1, done: 2 };
+  // E-mail or phone number: two ways to answer the first question.
+  var way = 'email';
+
+  var shown = null;
+  var view = null;
+  var busy = false;
+  var email = '';
+  var input = $('value');
+
+  $('title').textContent = fill(S.title);
+  $('subtitle').textContent = fill(S.subtitle);
+  $('privacy').textContent = S.privacy;
+  $('working-text').textContent = fill(S.opening);
+  var paste = $('paste');
+  if (paste) {
+    paste.textContent = S.paste;
+    paste.addEventListener('click', function (e) {
+      e.preventDefault();
+      location.href = '/paste?k=' + encodeURIComponent(KEY);
+    });
+  }
+
+  function steps(at) {
+    var dots = document.querySelectorAll('.dot');
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].className = 'dot' + (i === at ? ' on' : i < at ? ' past' : '');
+    }
+  }
+
+  function setView(name) {
+    if (view === name) return;
+    view = name;
+    ['working', 'form', 'notice', 'done'].forEach(function (id) { $(id).hidden = id !== name; });
+    if (name !== 'form') $('tip').hidden = true;
+  }
+
+  function working(text) {
+    $('working-text').textContent = text;
+    setView('working');
+  }
+
+  $('way-email').textContent = S.wayEmail;
+  $('way-phone').textContent = S.wayPhone;
+  ['email', 'phone'].forEach(function (name) {
+    $('way-' + name).addEventListener('click', function () {
+      if (busy || way === name) return;
+      way = name;
+      ask('email');
+    });
+  });
+
+  // The PC page's own words, shown under the hint ("Enter the code from
+  // your authenticator app"), so the phone says where the code comes from.
+  function pageSays(text) {
+    $('page-says').textContent = text || '';
+  }
+
+  // Before the first answer, a heads-up for social sign-ups (only where the
+  // backend has the problem: the ones offering a phone number instead); after
+  // a social redirect, the same card says what to do.
+  function tip(kind) {
+    var card = $('tip');
+    card.hidden = !kind;
+    if (!kind) return;
+    var words = { social: [S.socialTitle, S.socialText], signup: [S.signupTitle, S.signupText] }[kind] || [S.tipTitle, S.tipText];
+    card.className = 'card tip' + (kind === 'heads-up' ? '' : ' alert');
+    $('tip-title').textContent = fill(words[0]);
+    $('tip-text').textContent = fill(words[1]);
+  }
+
+  function ask(field, error) {
+    var first = field === 'email' || field === 'phone';
+    // The first question is the user's pick (e-mail or phone number), never
+    // the mode the PC page happens to be in.
+    if (first && PHONES) field = way;
+    $('seg').hidden = !(first && PHONES);
+    $('way-email').setAttribute('aria-selected', String(way === 'email'));
+    $('way-phone').setAttribute('aria-selected', String(way === 'phone'));
+    var spec = INPUTS[field];
+    var words = S[field];
+    if (!spec || !words) return;
+    if (shown !== field) {
+      shown = field;
+      input.value = '';
+      input.type = spec.type;
+      input.autocomplete = spec.auto;
+      input.inputMode = spec.mode;
+      input.className = 'field ' + spec.cls;
+      input.maxLength = field === 'code' ? 12 : 256;
+      $('label').textContent = words[0];
+      $('hint').innerHTML = fill(escape(words[1]).replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>'), {
+        name: escape(NAME),
+        email: escape(email || NAME)
+      });
+      steps(STEP_INDEX[field]);
+    }
+    $('error').textContent = error || '';
+    $('submit').textContent = words[2];
+    $('submit').disabled = false;
+    setView('form');
+    if (document.activeElement !== input) setTimeout(function () { input.focus(); }, 60);
+  }
+
+  function finished() {
+    if (view === 'done') return;
+    steps(2);
+    input.value = '';
+    email = '';
+    $('done-title').textContent = S.doneTitle;
+    $('done-text').textContent = S.closing;
+    setView('done');
+    if (navigator.vibrate) navigator.vibrate(30);
+    setTimeout(function () {
+      try { window.close(); } catch (_) {}
+      if (!window.closed) $('done-text').textContent = S.doneText;
+    }, 5000);
+  }
+
+  async function post(path, body) {
+    body.key = KEY;
+    var res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) return null;
+    var data = await res.json().catch(function () { return {}; });
+    return data.error || String(res.status);
+  }
+
+  var stopped = false;
+  async function poll() {
+    if (stopped) return;
+    try {
+      var res = await fetch('/api/status?k=' + encodeURIComponent(KEY));
+      var data = await res.json();
+      var p = data.progress || {};
+      if (data.done || p.step === 'done') {
+        stopped = true;
+        finished();
+        return;
+      }
+      var opening = p.ask === 'email' || p.ask === 'phone';
+      if (p.step === 'ask' && !busy) { ask(p.ask); pageSays(p.ask === 'code' ? p.message : ''); tip(opening && PHONES ? 'heads-up' : null); }
+      else if (p.step === 'error' && (p.message === 'social' || p.message === 'signup')) { shown = null; ask(p.ask); tip(p.message); }
+      else if (p.step === 'error') { shown = shown === p.ask ? shown : null; ask(p.ask, p.message); tip(null); }
+      else if (p.step === 'challenge') { $('notice-text').textContent = fill(p.message === 'page-unrecognized' ? S.unrecognized : S.challenge); setView('notice'); }
+      else if (p.step === 'working') working(shown ? fill(S.checking) : fill(S.opening));
+      else if (p.step === 'idle' && p.message) { $('notice-text').textContent = p.message; setView('notice'); }
+    } catch (e) {
+      $('notice-text').textContent = S.unreachable;
+      setView('notice');
+    }
+    setTimeout(poll, 900);
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    send();
+  });
+
+  async function send() {
+    if (busy || !shown) return;
+    var value = input.value;
+    if (!value.trim()) { $('error').textContent = S.empty; return; }
+    if (shown === 'email' && !/^\S+@\S+\.\S+$/.test(value.trim())) { $('error').textContent = S.invalidEmail; return; }
+    if (shown === 'phone' && !/^\s*\+[\d\s().-]{7,}$/.test(value)) { $('error').textContent = S.invalidPhone; return; }
+    busy = true;
+    var field = shown;
+    var button = $('submit');
+    var label = S[field][2];
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span>';
+    try {
+      var error = await post('/api/form/answer', { field: field, value: value });
+      if (error) {
+        button.textContent = label;
+        button.disabled = false;
+        $('error').textContent = error;
+      } else {
+        if (field === 'email' || field === 'phone') email = value.trim();
+        working(fill(S.checking));
+      }
+    } catch (err) {
+      button.textContent = label;
+      button.disabled = false;
+      $('error').textContent = S.unreachable;
+    } finally {
+      busy = false;
+      if (button.disabled === false) button.textContent = label;
+    }
+  }
+
+  steps(0);
+  post('/api/form/start', {}).then(function (error) {
+    if (error) { $('notice-text').textContent = error; setView('notice'); }
+  }, function () {
+    $('notice-text').textContent = S.unreachable;
+    setView('notice');
+  });
+  poll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LILO — setup</title>
+<style>
+  :root { color-scheme: dark; --bg: #101114; --card: #1a1c21; --line: #2a2d34; --ink: #f2f3f5; --muted: #9aa0aa; --accent: #6ea8fe; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: .04em; }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); }
+  .help { color: var(--muted); font-size: 14px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+            padding: 16px; margin-top: 16px; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li + li { margin-top: 8px; }
+  button { width: 100%; padding: 12px 14px; font-size: 15px; text-align: left; cursor: pointer;
+           color: var(--ink); background: #23262c; border: 1px solid var(--line); border-radius: 10px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #0b1220; font-weight: 600; text-align: center; }
+  button:disabled { opacity: .5; cursor: default; }
+  input, textarea { width: 100%; margin-top: 8px; padding: 11px 12px; font: inherit; color: var(--ink);
+                    background: #131519; border: 1px solid var(--line); border-radius: 10px; }
+  textarea { min-height: 84px; resize: vertical; font-size: 14px; }
+  .status { min-height: 20px; font-size: 14px; }
+  .ok { color: #7bd88f; }
+  .bad { color: #f08a8a; }
+  .row { display: flex; gap: 8px; }
+  .row button { text-align: center; }
+  #wifi-reveal { margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>LILO</h1>
+    <p class="muted" data-i18n="subtitle">Listen In. Listen Out. — device setup</p>
+  </header>
+
+  <section>
+    <h2 data-i18n="wifiTitle">1. Wi-Fi</h2>
+    <p class="muted" id="network-state" hidden></p>
+    <button type="button" id="wifi-reveal" data-i18n="changeNetwork" hidden>Change network</button>
+    <ul id="networks"><li class="muted" data-i18n="scanning">Scanning…</li></ul>
+    <form id="wifi-form" hidden>
+      <p class="muted" id="wifi-ssid"></p>
+      <input type="password" id="wifi-password" autocomplete="off" data-i18n-ph="password" placeholder="Network password">
+      <div class="row" style="margin-top:10px">
+        <button type="submit" class="primary" data-i18n="connect">Connect</button>
+        <button type="button" id="wifi-cancel" data-i18n="cancel">Cancel</button>
+      </div>
+    </form>
+    <p class="status" id="wifi-status"></p>
+  </section>
+
+  <section>
+    <h2 data-i18n="accountTitle">2. ChatGPT account</h2>
+    <p class="help" data-i18n="accountHelp">
+      On your computer, open chatgpt.com, then DevTools → Network → <code>api/auth/session</code>
+      and paste the response JSON here. To let the token renew itself, paste the
+      <code>__Secure-next-auth.session-token</code> cookie too (DevTools → Application → Cookies).
+    </p>
+    <textarea id="session" spellcheck="false" placeholder='{"accessToken": "eyJ…", "user": {"email": "…"}}'></textarea>
+    <textarea id="cookie" spellcheck="false" data-i18n-ph="cookie" placeholder="__Secure-next-auth.session-token=…  (optional)"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="primary" id="account-save" data-i18n="save">Save</button>
+    </div>
+    <p class="status" id="account-status"></p>
+  </section>
+
+  <p class="muted" data-i18n="closing">
+    LILO runs without a monitor: this page exists only while the Pi is unconfigured and closes itself when it is done.
+  </p>
+</main>
+
+<script>
+const texts = {
+  pt: {
+    subtitle: "Listen In. Listen Out. — configuração do aparelho",
+    wifiTitle: "1. Wi-Fi", scanning: "Procurando redes…", password: "Senha da rede",
+    connect: "Conectar", cancel: "Cancelar", accountTitle: "2. Conta ChatGPT",
+    accountHelp: "No computador, entre em chatgpt.com, abra o DevTools → Network → api/auth/session e cole aqui o JSON da resposta. Para a renovação automática do token, cole também o cookie __Secure-next-auth.session-token (DevTools → Application → Cookies).",
+    save: "Salvar", closing: "O LILO fica sem monitor: esta página existe só enquanto o Pi não estiver configurado e fecha sozinha no fim.",
+    connecting: "Conectando…", connected: "Conectado a", open: "aberta", secured: "com senha", saving: "Salvando…",
+    saved: "Conta salva. Pode fechar esta página.", noPassword: "Informe a senha.", failed: "Falhou: ",
+    online: "Já está online — nada a fazer.", noRadio: "Este aparelho não tem Wi-Fi; está na rede por cabo.",
+    changeNetwork: "Trocar de rede", scanFailed: "Não foi possível procurar redes.",
+    choose: "Escolha a rede", restart: "Redes",
+    cookie: "__Secure-next-auth.session-token=…  (opcional)"
+  },
+  en: {
+    subtitle: "Listen In. Listen Out. — device setup",
+    wifiTitle: "1. Wi-Fi", scanning: "Scanning…", password: "Network password",
+    connect: "Connect", cancel: "Cancel", accountTitle: "2. ChatGPT account",
+    accountHelp: "On your computer, open chatgpt.com, then DevTools → Network → api/auth/session and paste the response JSON here. To let the token renew itself, paste the __Secure-next-auth.session-token cookie too (DevTools → Application → Cookies).",
+    save: "Save", closing: "LILO runs without a monitor: this page exists only while the Pi is unconfigured and closes itself when it is done.",
+    connecting: "Connecting…", connected: "Connected to", open: "open", secured: "secured", saving: "Saving…",
+    saved: "Account saved. You can close this page.", noPassword: "Enter the password.", failed: "Failed: ",
+    online: "Already online — nothing to do.", noRadio: "This device has no Wi-Fi; it is on the network by cable.",
+    changeNetwork: "Change network", scanFailed: "Could not scan for networks.",
+    choose: "Pick a network", restart: "Networks",
+    cookie: "__Secure-next-auth.session-token=…  (optional)"
+  },
+  it: {
+    subtitle: "Listen In. Listen Out. — configurazione del dispositivo",
+    wifiTitle: "1. Wi-Fi", scanning: "Ricerca reti…", password: "Password della rete",
+    connect: "Connetti", cancel: "Annulla", accountTitle: "2. Account ChatGPT",
+    accountHelp: "Sul computer, apri chatgpt.com, poi DevTools → Network → api/auth/session e incolla qui il JSON della risposta. Perché il token si rinnovi da solo, incolla anche il cookie __Secure-next-auth.session-token (DevTools → Application → Cookies).",
+    save: "Salva", closing: "LILO funziona senza monitor: questa pagina esiste solo finché il Pi non è configurato e si chiude da sola alla fine.",
+    connecting: "Connessione…", connected: "Connesso a", open: "aperta", secured: "protetta", saving: "Salvataggio…",
+    saved: "Account salvato. Puoi chiudere questa pagina.", noPassword: "Inserisci la password.", failed: "Non riuscito: ",
+    online: "Già online — niente da fare.", noRadio: "Questo dispositivo non ha Wi-Fi; è in rete via cavo.",
+    changeNetwork: "Cambia rete", scanFailed: "Impossibile cercare le reti.",
+    choose: "Scegli la rete", restart: "Reti",
+    cookie: "__Secure-next-auth.session-token=…  (facoltativo)"
+  }
+};
+// The browser's language when the page has it, English otherwise.
+const lang = (navigator.language || "en").slice(0, 2).toLowerCase();
+const text = texts[lang] || texts.en;
+document.documentElement.lang = texts[lang] ? lang : "en";
+
+for (const node of document.querySelectorAll("[data-i18n]")) node.textContent = text[node.dataset.i18n];
+for (const node of document.querySelectorAll("[data-i18n-ph]")) node.placeholder = text[node.dataset.i18nPh];
+
+const $ = (id) => document.getElementById(id);
+let chosen = null;
+
+async function scan() {
+  const list = $("networks");
+  list.innerHTML = `<li class="muted">${text.scanning}</li>`;
+  try {
+    const data = await (await fetch("/api/scan")).json();
+    if (!Array.isArray(data)) {          // an error object, not a network list
+      list.innerHTML = `<li class="bad">${data.error || text.scanFailed}</li>`;
+      return;
+    }
+    if (!data.length) { list.innerHTML = `<li class="muted">${text.choose}</li>`; return; }
+    list.innerHTML = "";
+    for (const network of data) {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${network.ssid}  ${network.signal}%${network.secured ? "  " + text.secured : ""}`;
+      button.onclick = () => pick(network);
+      item.appendChild(button);
+      list.appendChild(item);
+    }
+  } catch (error) {
+    list.innerHTML = `<li class="bad">${error}</li>`;
+  }
+}
+
+// What the network section shows depends on facts only the box knows: a box
+// already online (Ethernet, a joined network) has nothing to configure, and a
+// box with no radio has no network to pick. Only the third state scans.
+let networkState = null;
+let revealed = false;
+let scanStarted = false;
+
+function revealScan() {
+  revealed = true;
+  networkState = "scan";
+  $("network-state").hidden = true;
+  $("wifi-reveal").hidden = true;
+  $("networks").hidden = false;
+  if (!scanStarted) { scanStarted = true; scan(); }
+}
+
+function renderNetworkState(status) {
+  const next = status.radio === false ? "noradio"
+    : (status.online === true && !revealed ? "online" : "scan");
+  if (next === networkState) return;
+  networkState = next;
+
+  const state = $("network-state");
+  const reveal = $("wifi-reveal");
+  if (next === "noradio") {
+    state.textContent = text.noRadio;
+    state.hidden = false;
+    reveal.hidden = true;
+    $("networks").hidden = true;
+    $("wifi-form").hidden = true;
+    return;
+  }
+  if (next === "online") {
+    state.textContent = text.online;
+    state.hidden = false;
+    reveal.hidden = false;
+    $("networks").hidden = true;
+    $("wifi-form").hidden = true;
+    return;
+  }
+  state.hidden = true;
+  reveal.hidden = true;
+  $("networks").hidden = false;
+  if (!scanStarted) { scanStarted = true; scan(); }
+}
+
+function pick(network) {
+  chosen = network;
+  $("wifi-ssid").textContent = `${text.choose}: ${network.ssid}`;
+  $("wifi-form").hidden = false;
+  $("wifi-status").textContent = "";
+  $("wifi-password").value = "";
+  $("wifi-password").placeholder = network.secured ? text.password : text.open;
+  $("wifi-password").focus();
+}
+
+$("wifi-cancel").onclick = () => { $("wifi-form").hidden = true; chosen = null; };
+
+$("wifi-form").onsubmit = async (event) => {
+  event.preventDefault();
+  if (!chosen) return;
+  if (chosen.secured && !$("wifi-password").value) { $("wifi-status").textContent = text.noPassword; return; }
+  const status = $("wifi-status");
+  status.className = "status";
+  status.textContent = text.connecting;
+  const response = await fetch("/api/wifi", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ssid: chosen.ssid, password: $("wifi-password").value })
+  });
+  const result = await response.json();
+  if (result.ok) {
+    status.className = "status ok";
+    status.textContent = `${text.connected} ${chosen.ssid}`;
+    $("wifi-form").hidden = true;
+  } else {
+    status.className = "status bad";
+    status.textContent = text.failed + result.error;
+  }
+};
+
+$("account-save").onclick = async () => {
+  const status = $("account-status");
+  status.className = "status";
+  status.textContent = text.saving;
+  const response = await fetch("/api/account", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ session: $("session").value, cookie: $("cookie").value })
+  });
+  const result = await response.json();
+  if (result.ok) {
+    status.className = "status ok";
+    status.textContent = `${text.saved}${result.email ? " (" + result.email + ")" : ""}`;
+  } else {
+    status.className = "status bad";
+    status.textContent = text.failed + result.error;
+  }
+};
+
+$("wifi-reveal").onclick = revealScan;
+
+// While the box is not configured the page is the only way in; the status
+// polled here is what tells the daemon to leave setup mode.
+async function refresh() {
+  try {
+    const status = await (await fetch("/api/status")).json();
+    if (status.done) $("account-status").className = "status ok";
+    renderNetworkState(status);
+  } catch (_) {
+    // The box was unreachable for a moment; if nothing was shown yet, fall
+    // back to the plain scan so the page stays usable.
+    if (!scanStarted) revealScan();
+  }
+}
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

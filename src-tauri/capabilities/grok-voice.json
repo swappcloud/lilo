@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "grok-voice",
+  "description": "The Grok transport window may only report its voice events",
+  "windows": ["grok"],
+  "remote": { "urls": ["https://grok.com/*", "https://grok.com"] },
+  "permissions": ["grok-voice:default"]
+}

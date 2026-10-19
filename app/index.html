@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LILO</title>
+    <meta
+      name="description"
+      content="LILO — Listen In. Listen Out. An independent desktop interface with embedded web browsing for realtime voice services and local plugins. Use your own accounts; provider terms, availability and limits apply."
+    />
+    <meta name="theme-color" content="#070b14" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  </head>
+  <body>
+    <!--
+      Startup splash. It lives in the HTML, not in React, because the white
+      frame we are removing happens *before* the bundle has even parsed —
+      anything rendered by JS is already too late.
+
+      It shows the vector logo with its waveforms beating in pure CSS. Once the
+      bundle runs, `src/app/splash.ts` takes the same SVG over (`data-lilo`
+      nodes): the logo keeps beating while startup works, then the waveforms
+      become a face and LILO glides onto the voice stage.
+
+      The CSP allows inline styles but not inline scripts, so the stored theme
+      cannot be read here. It is always the app's dark canvas: dark is the
+      default, and a light frame on a dark app reads as a white flash. LILO
+      takes the app theme's colours while it glides in.
+
+      The paths are copies of `src/shared/brand/logoPaths.ts`; keep them in sync.
+    -->
+    <style>
+      /* Dark from the first byte: the app's canvas, so no white frame can show
+         before the stylesheet loads. */
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #070b14;
+        color-scheme: dark;
+      }
+      #splash {
+        --S: min(46vmin, 400px);
+        /* Ink is the brand gradient (the default accent); paper is the app's
+           dark surface, exactly as `--lilo-paper` in the dark theme. */
+        --from: #6366f1;
+        --to: #a855f7;
+        --paper: #0b1220;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+        opacity: 1;
+        transition: opacity 260ms ease;
+        /* The splash covers the titlebar, so without this the window cannot be
+           moved while it is up. */
+        -webkit-app-region: drag;
+      }
+      #splash[data-leaving="true"] {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash[data-state="glide"] {
+        pointer-events: none;
+      }
+      #splash .backdrop {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 40%, #0b1220 0%, #070b14 60%);
+        transition: opacity 700ms ease 150ms;
+      }
+      #splash[data-state="glide"] .backdrop {
+        opacity: 0;
+      }
+      #splash .logo {
+        position: absolute;
+        left: 50%;
+        top: 44%;
+        width: calc(var(--S) * 1.575);
+        height: var(--S);
+        /* Centre what you see (bubble + word), not the square around the bubble. */
+        transform: translate(calc(-50% - var(--S) * 0.1), -50%);
+      }
+      #splash .mark {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: var(--S);
+        height: var(--S);
+        overflow: visible;
+        transform-origin: 50% 50%;
+        transition: transform 950ms cubic-bezier(0.65, 0, 0.25, 1),
+          opacity 500ms ease 450ms;
+      }
+      #splash .word {
+        position: absolute;
+        left: calc(var(--S) * 0.85);
+        top: calc(var(--S) * 0.375);
+        width: calc(var(--S) * 0.725);
+        height: calc(var(--S) * 0.23);
+        transition: opacity 500ms ease, transform 900ms cubic-bezier(0.65, 0, 0.25, 1);
+      }
+      #splash[data-state="glide"] .word {
+        opacity: 0;
+        transform: translateX(calc(var(--S) * 0.14));
+      }
+      #splash .from { stop-color: var(--from); transition: stop-color 700ms ease; }
+      #splash .to { stop-color: var(--to); transition: stop-color 700ms ease; }
+      #splash .ink { fill: url(#splash-ink); }
+      #splash .word-ink { fill: #f1f5f9; }
+      #splash .paper { fill: var(--paper); transition: fill 700ms ease; }
+      #splash .s-ink { stroke: url(#splash-ink); }
+      #splash .s-paper { stroke: var(--paper); transition: stroke 700ms ease; }
+      #splash .wave { fill: none; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+      #splash .mouth { fill: url(#splash-ink); stroke: url(#splash-ink); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      #splash .outline { fill: none; stroke: url(#splash-ink); stroke-width: 8.5; stroke-linejoin: round; }
+      #splash .shadow { fill: #0b0b0c; }
+      /* Gliding onto the app: take the app theme's colours on the way. */
+      #splash[data-state="glide"] {
+        --from: var(--accent, #6366f1);
+        --to: var(--accent2, #a855f7);
+        --paper: var(--lilo-paper, #0b1220);
+      }
+      /* Heartbeat until the bundle drives the waveforms itself. */
+      #splash .beat {
+        transform-box: fill-box;
+        transform-origin: 50% 50%;
+        animation: splash-beat 1.6s ease-in-out infinite;
+      }
+      #splash[data-live="true"] .beat {
+        animation: none;
+      }
+      #splash .foot {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(44% + var(--S) * 0.42);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        transition: opacity 400ms ease;
+      }
+      #splash[data-state] .foot {
+        opacity: 0;
+      }
+      #splash .tagline {
+        font-size: 12px;
+        letter-spacing: 0.24em;
+        text-indent: 0.24em;
+        text-transform: uppercase;
+        color: #8fa0b8;
+      }
+      #splash .bar {
+        width: 132px;
+        height: 2px;
+        border-radius: 2px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.14);
+      }
+      #splash .bar span {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.72);
+        animation: splash-slide 1.1s ease-in-out infinite;
+      }
+      #splash .status {
+        font-size: 11px;
+        color: #8fa0b8;
+        min-height: 14px;
+      }
+      /* Desktop companion (set by the bundle before the window shows): no
+         backdrop, only the mark, standing exactly where LILO will stand in the
+         bottom 330px of the 820×500 companion window (see companion.css). */
+      html[data-shell="companion"]:not([data-window="panel"]),
+      html[data-shell="companion"]:not([data-window="panel"]) body {
+        background: transparent;
+      }
+      html[data-shell="companion"] #splash {
+        --S: 300px;
+        pointer-events: none;
+        -webkit-app-region: no-drag;
+      }
+      html[data-shell="companion"] #splash .backdrop,
+      html[data-shell="companion"] #splash .word,
+      html[data-shell="companion"] #splash .foot {
+        display: none;
+      }
+      html[data-shell="companion"] #splash .logo {
+        left: 260px;
+        top: auto;
+        bottom: 18px;
+        width: 300px;
+        height: 300px;
+        transform: none;
+      }
+      @keyframes splash-beat {
+        0%, 40%, 100% { transform: scaleY(1); }
+        10% { transform: scaleY(1.7); }
+        20% { transform: scaleY(1); }
+        30% { transform: scaleY(1.56); }
+      }
+      @keyframes splash-slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(330%); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash .beat,
+        #splash .bar span {
+          animation: none;
+        }
+        #splash .bar span { width: 100%; }
+      }
+    </style>
+    <div id="splash" role="status" aria-label="Starting LILO" data-tauri-drag-region="deep">
+      <div class="backdrop"></div>
+      <div class="logo">
+        <svg class="mark" viewBox="0 0 400 400" aria-hidden="true">
+          <defs>
+            <linearGradient id="splash-ink" gradientUnits="userSpaceOnUse" x1="90" y1="70" x2="310" y2="330">
+              <stop offset="0" class="from"></stop>
+              <stop offset="1" class="to"></stop>
+            </linearGradient>
+            <clipPath id="splash-split"><path data-lilo="split" d="M200,-80L200,78 A59,59 0 0 0 200,196 A59,59 0 0 1 200,314 L200,480L480,480L480,-80Z"></path></clipPath>
+          </defs>
+          <ellipse data-lilo="shadow" class="shadow" cx="200" cy="356" rx="92" ry="9" opacity="0"></ellipse>
+          <g data-lilo="tilt">
+            <path data-lilo="body" class="paper" d="M260.8,94.9Q275.5,86.1 300.6,80.2 Q293.6,116.6 310.9,155.6A118,118 0 0 1 130.6,291.5Q115.8,299.4 86.5,309.5 Q102.2,270.2 88.4,234.4A118,118 0 0 1 260.8,94.9Z"></path>
+            <g clip-path="url(#splash-split)">
+              <path data-lilo="body" class="ink" d="M260.8,94.9Q275.5,86.1 300.6,80.2 Q293.6,116.6 310.9,155.6A118,118 0 0 1 130.6,291.5Q115.8,299.4 86.5,309.5 Q102.2,270.2 88.4,234.4A118,118 0 0 1 260.8,94.9Z"></path>
+            </g>
+            <ellipse data-lilo="eye-left" class="ink" cx="150" cy="176" rx="0" ry="0"></ellipse>
+            <ellipse data-lilo="eye-right" class="paper" cx="250" cy="176" rx="0" ry="0"></ellipse>
+            <path data-lilo="mouth" class="mouth" d="" opacity="0"></path>
+            <path data-lilo="wave" class="wave s-ink" d="" opacity="0"></path>
+            <g class="beat"><path data-lilo="wave-upper" class="wave s-paper" d="M187,146 L197.3,146 L200.5,143.3 L203.7,149.3 L207,138.5 L210.5,155.3 L214,131 L217.5,159.5 L221,137.8 L224.3,150.5 L227.5,143.6 L230.7,146 L241,146"></path></g>
+            <g class="beat"><path data-lilo="wave-lower" class="wave s-ink" d="M161,244 L171.3,244 L174.5,241.3 L177.7,247.3 L181,236.5 L184.5,253.3 L188,229 L191.5,257.5 L195,235.8 L198.3,248.5 L201.5,241.6 L204.7,244 L215,244"></path></g>
+            <path data-lilo="body" class="outline" d="M260.8,94.9Q275.5,86.1 300.6,80.2 Q293.6,116.6 310.9,155.6A118,118 0 0 1 130.6,291.5Q115.8,299.4 86.5,309.5 Q102.2,270.2 88.4,234.4A118,118 0 0 1 260.8,94.9Z"></path>
+          </g>
+        </svg>
+        <svg class="word" viewBox="340 150 290 92" aria-hidden="true">
+          <path class="word-ink" d="M361.8 234V158H380.2V217.7H414.1V234ZM430.9,234H449.3V158H430.9ZM471.4 234V158H489.8V217.7H523.7V234ZM575.1 235.1Q566.5 235.1 559.3 232.2Q552.1 229.2 546.8 223.9Q541.5 218.6 538.6 211.4Q535.7 204.2 535.7 195.7Q535.7 187.1 538.6 179.9Q541.5 172.7 546.8 167.5Q552.1 162.2 559.3 159.2Q566.5 156.3 575.1 156.3Q583.7 156.3 590.8 159.2Q598 162.2 603.3 167.5Q608.6 172.8 611.5 180Q614.4 187.1 614.4 195.6Q614.4 204.2 611.5 211.4Q608.6 218.6 603.3 223.9Q598 229.2 590.8 232.2Q583.7 235.1 575.1 235.1ZM575.1 217.8Q579.5 217.8 583.3 216.1Q587 214.5 589.8 211.5Q592.6 208.5 594.1 204.5Q595.6 200.5 595.6 195.7Q595.6 190.9 594.1 186.9Q592.6 182.9 589.8 179.9Q587 176.9 583.3 175.2Q579.5 173.6 575.1 173.6Q570.6 173.6 566.8 175.2Q563.1 176.9 560.3 179.8Q557.5 182.8 556 186.8Q554.5 190.9 554.5 195.7Q554.5 200.5 556 204.5Q557.5 208.6 560.3 211.5Q563.1 214.5 566.8 216.1Q570.6 217.8 575.1 217.8Z"></path>
+        </svg>
+      </div>
+      <div class="foot">
+        <div class="tagline">Listen In. Listen Out.</div>
+        <div class="bar"><span></span></div>
+        <div class="status">Starting…</div>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

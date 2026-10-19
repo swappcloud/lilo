@@ -1,0 +1,30 @@
+# LILO headless daemon (headless Linux appliance).
+#
+# Install: cp lilo-daemon /usr/local/bin/ && cp lilo-daemon.service /etc/systemd/system/
+#          systemctl daemon-reload && systemctl enable --now lilo-daemon
+# Config:  /etc/lilo/lilo.toml (see lilo.toml.example); point data_dir at the
+#          StateDirectory below so settings and plugins live there.
+
+[Unit]
+Description=LILO voice daemon (headless)
+Documentation=https://github.com/swappcloud/lilo
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/lilo-daemon --config /etc/lilo/lilo.toml
+StateDirectory=lilo
+Restart=on-failure
+RestartSec=5
+# The audio pipeline will need the microphone; the wake milestone adds the
+# device groups then.
+# SupplementaryGroups=audio
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/var/lib/lilo
+
+[Install]
+WantedBy=multi-user.target

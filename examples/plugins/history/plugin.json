@@ -1,0 +1,26 @@
+{
+  "id": "com.lilo.history",
+  "name": "Music history",
+  "version": "1.0.2",
+  "api": 1,
+  "capabilities": [
+    "storage:self"
+  ],
+  "runtime": "quickjs",
+  "entry": "history.js",
+  "description": "View previously played songs and play them again.",
+  "localized": {
+    "en": {
+      "name": "Music history",
+      "description": "View previously played songs and play them again."
+    },
+    "pt": {
+      "name": "Histórico de músicas",
+      "description": "Veja as músicas já tocadas e ouça novamente."
+    },
+    "it": {
+      "name": "Cronologia musicale",
+      "description": "Consulta i brani già ascoltati e riproducili di nuovo."
+    }
+  }
+}

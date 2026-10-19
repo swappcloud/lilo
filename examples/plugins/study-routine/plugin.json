@@ -1,0 +1,10 @@
+{
+  "id": "com.lilo.study-routine",
+  "name": "Study routine interview",
+  "description": "Ask and confirm a daily language-study budget, saving only a confirmed user answer.",
+  "version": "1.0.0",
+  "api": 1,
+  "runtime": "quickjs",
+  "entry": "routine.js",
+  "capabilities": ["storage:self", "session:read", "interaction:self"]
+}

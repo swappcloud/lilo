@@ -1,0 +1,10 @@
+{
+  "id": "com.lilo.vocabulary-review",
+  "name": "Daily vocabulary review",
+  "description": "Keep your own vocabulary cues and resume a daily review after restarting LILO.",
+  "version": "1.0.0",
+  "api": 1,
+  "runtime": "quickjs",
+  "entry": "review.js",
+  "capabilities": ["storage:self", "schedule:self"]
+}

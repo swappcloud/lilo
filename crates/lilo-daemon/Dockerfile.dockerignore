@@ -1,0 +1,16 @@
+**
+!Cargo.toml
+!Cargo.lock
+!crates/
+!crates/**
+!src-tauri/
+!src-tauri/Cargo.toml
+!src-tauri/src/
+!src-tauri/src/lib.rs
+!src-tauri/src/main.rs
+!.tmp/
+!.tmp/daemon-web/
+!.tmp/daemon-web/**
+!examples/
+!examples/plugins/
+!examples/plugins/**

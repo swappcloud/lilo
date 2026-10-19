@@ -1,0 +1,10 @@
+{
+  "name": "@lilo/daemon-browser-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "scripts": { "start": "node src/server.mjs" },
+  "dependencies": { "playwright-core": "1.64.0" },
+  "engines": { "node": ">=22" }
+}

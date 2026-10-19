@@ -1,0 +1,26 @@
+{
+  "id": "com.lilo.gallery",
+  "name": "Image gallery",
+  "version": "1.3.1",
+  "api": 1,
+  "capabilities": [
+    "storage:self"
+  ],
+  "runtime": "quickjs",
+  "entry": "gallery.js",
+  "description": "Browse, download, and show images generated during your conversations.",
+  "localized": {
+    "en": {
+      "name": "Image gallery",
+      "description": "Browse, download, and show images generated during your conversations."
+    },
+    "pt": {
+      "name": "Galeria de imagens",
+      "description": "Veja, baixe e mostre as imagens geradas durante suas conversas."
+    },
+    "it": {
+      "name": "Galleria di immagini",
+      "description": "Sfoglia, scarica e mostra le immagini generate durante le conversazioni."
+    }
+  }
+}

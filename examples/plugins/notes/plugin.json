@@ -1,0 +1,30 @@
+{
+  "id": "com.lilo.notes",
+  "name": "Voice notes",
+  "version": "1.1.0",
+  "api": 1,
+  "capabilities": [
+    "storage:self"
+  ],
+  "runtime": "quickjs",
+  "entry": "notes.js",
+  "description": "Save, list, and delete text notes using your voice.",
+  "localized": {
+    "en": {
+      "name": "Voice notes",
+      "description": "Save, list, and delete text notes using your voice."
+    },
+    "pt": {
+      "name": "Notas por voz",
+      "description": "Salve, consulte e apague notas de texto usando sua voz."
+    },
+    "it": {
+      "name": "Note vocali",
+      "description": "Salva, consulta ed elimina note di testo usando la voce."
+    }
+  },
+  "hosts": [
+    "desktop",
+    "daemon"
+  ]
+}

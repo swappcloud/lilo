@@ -1,0 +1,214 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: radial-gradient(120% 90% at 50% 0%, var(--bg2), var(--bg));
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  /* Desktop app feel: dragging must never select UI chrome. Text that users
+     copy (transcripts, conversations, inputs) opts back in below. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.msgs,
+.rail {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Keyboard focus is always visible and always in the palette colour; mouse
+   clicks do not leave rings behind. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.field:focus-visible {
+  outline: none;
+}
+
+::selection {
+  background: var(--c1a);
+}
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(15, 23, 42, 0.15);
+}
+
+/* --- Aurora background + grain ------------------------------------- */
+.aurora {
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(70px);
+}
+.aurora i {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.55;
+}
+.aurora .b1 {
+  width: 55vmax;
+  height: 55vmax;
+  left: -12vmax;
+  top: -14vmax;
+  background: radial-gradient(closest-side, var(--c1a), transparent 70%);
+  animation: drift1 26s ease-in-out infinite alternate;
+}
+.aurora .b2 {
+  width: 48vmax;
+  height: 48vmax;
+  right: -10vmax;
+  bottom: -12vmax;
+  background: radial-gradient(closest-side, var(--c2a), transparent 70%);
+  animation: drift2 31s ease-in-out infinite alternate;
+}
+.aurora .b3 {
+  width: 30vmax;
+  height: 30vmax;
+  right: 8vmax;
+  top: -6vmax;
+  background: radial-gradient(closest-side, var(--c1a), transparent 70%);
+  opacity: 0.3;
+  animation: drift3 22s ease-in-out infinite alternate;
+}
+[data-theme="light"] .aurora i {
+  opacity: 0.35;
+}
+@keyframes drift1 {
+  to {
+    transform: translate(9vmax, 7vmax) scale(1.15);
+  }
+}
+@keyframes drift2 {
+  to {
+    transform: translate(-8vmax, -6vmax) scale(1.1);
+  }
+}
+@keyframes drift3 {
+  to {
+    transform: translate(-6vmax, 9vmax) scale(0.9);
+  }
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Plugin background scene (weather and the like): above the aurora, below the
+   visualizer and the UI. */
+.scene-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+}
+
+/* Full-bleed visualization canvas: covers the window so the orb glow never
+   shows a square boundary. Sits between the aurora and the UI. */
+.orb-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+}
+
+/* --- scrollbars ----------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--stroke2);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* --- utilities ------------------------------------------------------ */
+[hidden] {
+  display: none !important;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.warn {
+  color: var(--warn);
+}
+
+[data-theme="light"] .warn {
+  font-weight: 700;
+}
+.error {
+  color: var(--err);
+}
+.ok {
+  color: var(--ok);
+}
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+code {
+  background: var(--glass2);
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 12px;
+}

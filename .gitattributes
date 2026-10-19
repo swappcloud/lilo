@@ -1,0 +1,14 @@
+# The marketplace digest test (and the shell scripts it ships) assumes LF
+# contents. Without this, a Windows checkout with core.autocrlf=true rewrites
+# them to CRLF and the digests stop matching.
+*.sh text eol=lf
+*.json text eol=lf
+
+# Marketplace plugin files are served byte-for-byte and checked against the
+# sha256 digests in examples/plugins/index.json, so they must stay LF too.
+examples/plugins/** text=auto eol=lf
+
+# Batch entry points are only ever read by cmd.exe; CRLF is its native line
+# ending, and the setup scripts must not depend on cmd's LF tolerance.
+*.cmd text eol=crlf
+*.bat text eol=crlf

@@ -1,0 +1,10 @@
+{
+  "id": "com.lilo.phrasebook",
+  "name": "Travel phrasebook",
+  "description": "Offline Italian travel phrases explained in the user's support language.",
+  "version": "1.0.0",
+  "api": 1,
+  "runtime": "quickjs",
+  "entry": "phrasebook.js",
+  "capabilities": ["session:read"]
+}

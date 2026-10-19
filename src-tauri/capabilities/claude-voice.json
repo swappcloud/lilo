@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "claude-voice",
+  "description": "The hidden claude.ai window may only report voice events",
+  "windows": ["claude"],
+  "remote": {
+    "urls": ["https://claude.ai/*", "https://claude.ai"]
+  },
+  "permissions": ["claude-voice:default"]
+}

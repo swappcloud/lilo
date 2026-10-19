@@ -1,0 +1,7 @@
+{
+  "name": "@lilo/phone-login",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "description": "Shared real-provider-page phone form driver for native and headless browser adapters"
+}

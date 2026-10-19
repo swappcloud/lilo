@@ -1,0 +1,1117 @@
+/* Reusable UI: buttons, chips, fields, switches, messages, lists. */
+
+/* --- buttons -------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  font-weight: 800;
+  font-size: 13.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: 0.2s var(--ease);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn.primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 5px 18px var(--c1a);
+}
+.btn.primary:hover:not(:disabled) {
+  transform: scale(1.03);
+}
+.btn.ghost {
+  border: 1px solid var(--stroke);
+  color: var(--muted);
+}
+.btn.ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--glass2);
+}
+.btn.small {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  font-size: 12.5px;
+}
+/* Destructive action inside a row: quiet until it is the only option left. */
+.btn.danger {
+  color: var(--err);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+.btn.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+}
+/* Pressing gives way a little: every control answers the finger. */
+.btn:active:not(:disabled),
+.seg button:active,
+.palette:active {
+  transform: scale(0.97);
+}
+
+/* --- panel body / sections ----------------------------------------- */
+/* Apple System Settings style: a quiet group label above a rounded card whose
+   rows are separated by hairlines. Every settings group is its own card so it
+   is immediately obvious where one section ends and the next begins. */
+.sbody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 18px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.set-group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.sec {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  color: var(--muted);
+  padding-left: 5px;
+}
+.set-card {
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  padding: var(--card-padding);
+  display: flex;
+  flex-direction: column;
+}
+.set-card > * {
+  padding: var(--control-padding) 0;
+}
+.set-card > * + * {
+  border-top: 1px solid var(--stroke);
+}
+/* Rows that live inside a `.stack` keep the same rhythm. */
+.set-card .stack {
+  gap: 0;
+}
+.set-card .stack > * {
+  padding: var(--control-padding) 0;
+}
+.set-card .stack > * + * {
+  border-top: 1px solid var(--stroke);
+}
+/* Boxed callouts keep their own padding/border instead of the row hairlines. */
+.set-card .notice,
+.set-card .errorbox {
+  padding: 11px 13px;
+  border-radius: 10px;
+}
+.set-card .notice + *,
+.set-card .errorbox + * {
+  border-top: none;
+}
+/* Callouts stacked inside a `.stack` need breathing room: flex `gap` is 0
+   here and their padding is internal, so without margin consecutive boxes
+   (e.g. the two notices in ProviderSection) glue together. Same rhythm as
+   tool cards. */
+.set-card .stack > .notice,
+.set-card .stack > .errorbox {
+  margin: 9px 0;
+}
+.set-card > .notice,
+.set-card > .errorbox {
+  margin: 12px 0;
+  padding: 11px 13px;
+}
+.set-card > .notice:first-child,
+.set-card > .errorbox:first-child {
+  margin-top: 14px;
+}
+/* Tool cards are already boxed: keep their own padding and spacing instead of
+   the hairline row rhythm, so they never appear glued together. */
+.set-card .stack > .tool,
+.set-card .stack > .toolrun {
+  padding: 11px 13px;
+  margin: 9px 0;
+}
+.set-card .stack > .tool + *,
+.set-card .stack > .toolrun + * {
+  border-top: none;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.row.between {
+  justify-content: space-between;
+}
+.row.end {
+  justify-content: flex-end;
+}
+/* Vertical button groups: real gap instead of the set-card row rhythm
+   (stacked buttons must never look glued together). */
+.btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* A flex-column card keeps its actions at the bottom, after flexible content. */
+.card-actions {
+  margin-top: auto;
+  flex: 0 0 auto;
+}
+.card-actions > .btn {
+  flex: 0 0 auto;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* One plugin (installed list) or one catalog entry: its own column with a real
+   gap, so the rows inside a card never glue together. The card itself supplies
+   the padding and the hairline between entries. */
+.plugin-row,
+.catalog-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* --- fields --------------------------------------------------------- */
+.field {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--r-sm);
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  outline: none;
+}
+.field:focus {
+  border-color: var(--accent);
+}
+.field::placeholder {
+  color: var(--muted);
+  font-weight: 500;
+}
+select.field {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+}
+/* The popup list is drawn natively, outside the glass: a translucent field
+   background flattens to white there, turning light option text invisible
+   (seen on Windows/WebView2). Opaque per-theme surfaces fix it. */
+select.field option,
+select.field optgroup {
+  color: var(--text);
+  background-color: var(--field-solid);
+}
+textarea.field {
+  resize: vertical;
+  min-height: 70px;
+  font-family: var(--font);
+}
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.field-help {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.45;
+}
+
+/* --- switch --------------------------------------------------------- */
+.switch {
+  position: relative;
+  width: 44px;
+  height: 25px;
+  border-radius: 99px;
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  transition: 0.25s;
+  flex: none;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2.5px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: 0.25s var(--ease);
+}
+.switch.on {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+}
+.switch.on::after {
+  left: 22px;
+  background: #fff;
+}
+
+/* --- segmented control --------------------------------------------- */
+.seg {
+  display: flex;
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-sm);
+  padding: 4px;
+  gap: 4px;
+}
+.seg button {
+  flex: 1;
+  padding: 8px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  transition: 0.2s;
+}
+.seg button.on {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  box-shadow: 0 3px 12px var(--c1a);
+}
+
+/* Independent choices keep longer labels readable without an enclosing box. */
+.choice-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.choice-tags button {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  background: var(--glass2);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.choice-tags button:hover { color: var(--text); border-color: var(--accent); }
+.choice-tags button.on { color: var(--text); border-color: var(--accent); background: var(--c1a); }
+.choice-tags button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg button { white-space: nowrap; }
+
+/* --- slider --------------------------------------------------------- */
+.slider {
+  display: grid;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.slider-heading { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); }
+.slider-current-value { font-size: 14px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
+.slider-bounds { display: flex; justify-content: space-between; font-size: 10px; font-weight: 400; }
+.slider .field-help { margin: 0; font-weight: 400; }
+.slider input[type="range"] { display: block; width: 100%; min-width: 0; height: 24px; background: none; cursor: pointer; }
+.slider input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: var(--glass2); }
+.slider input[type="range"]::-webkit-slider-thumb { margin-top: -6px; }
+.slider input[type="range"]::-moz-range-track { height: 4px; border-radius: 99px; background: var(--glass2); }
+.slider input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--text); }
+.slider input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="range"] {
+  flex: 1;
+  appearance: none;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--glass2);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px var(--c1a);
+  cursor: grab;
+  transition: 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* --- palette picker ------------------------------------------------ */
+/* Each card scopes --accent/--accent2 to itself (inline style), so the LILO
+   mark inside paints in that palette while the rest of the app keeps the
+   current one. */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 10px;
+}
+.palette {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px 10px;
+  border-radius: 14px;
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  color: var(--muted);
+  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease), color 0.2s var(--ease);
+}
+.palette::before {
+  /* The palette's own gradient as a soft wash behind the mark. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  opacity: 0.1;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease);
+}
+.palette:hover {
+  transform: translateY(-2px);
+  color: var(--text);
+}
+.palette:hover::before {
+  opacity: 0.18;
+}
+.palette.on {
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 8px 24px -10px var(--accent);
+}
+.palette.on::before {
+  opacity: 0.22;
+}
+.palette-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+.palette-name {
+  position: relative;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+.palette-custom {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.color-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  border-radius: var(--r-sm);
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.color-field code {
+  margin-left: auto;
+  text-transform: uppercase;
+}
+.color-field input[type="color"] {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+.color-field input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.color-field input[type="color"]::-webkit-color-swatch {
+  border: 1px solid var(--stroke2);
+  border-radius: 9px;
+}
+
+/* A quiet chrome chip: the voice budget, the session clock. Never louder than
+   the things the user acts on. */
+.topchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+.topchip b {
+  color: var(--text);
+  font-weight: 700;
+}
+.topchip.is-idle b {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* --- status / chips ------------------------------------------------- */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: var(--glass2);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.status-chip.ok {
+  color: var(--ok);
+  border-color: rgba(16, 185, 129, 0.45);
+}
+.status-chip.bad {
+  color: var(--err);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+.status-chip.wait {
+  color: var(--warn);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+[data-theme="light"] .status-chip.wait {
+  font-weight: 700;
+}
+
+/* --- account block -------------------------------------------------- */
+.account .avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 14px;
+}
+.account b {
+  display: block;
+  font-size: 14px;
+}
+.account small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.bar {
+  height: 5px;
+  border-radius: 99px;
+  background: var(--glass2);
+  margin-top: 8px;
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.4s var(--ease);
+}
+
+/* --- messages ------------------------------------------------------- */
+.msg {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  position: relative;
+  animation: pop 0.3s var(--ease);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+.msg .t {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.msg.user {
+  align-self: flex-start;
+  background: var(--glass2);
+  border: 1px solid var(--stroke);
+  border-bottom-left-radius: 5px;
+}
+.msg.ai {
+  align-self: flex-end;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-bottom-right-radius: 5px;
+  box-shadow: 0 4px 18px var(--c1a);
+}
+.msg.ai .t {
+  color: rgba(255, 255, 255, 0.75);
+}
+.msg.sys {
+  align-self: center;
+  max-width: 94%;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--warn-ink);
+  font-size: 12px;
+  text-align: center;
+}
+.msg.partial {
+  border-color: var(--stroke2);
+}
+
+.eq {
+  display: inline-flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 10px;
+  margin-left: 8px;
+  vertical-align: -1px;
+}
+.eq i {
+  width: 2.5px;
+  background: #fff;
+  border-radius: 2px;
+  animation: eq 0.7s ease-in-out infinite;
+}
+.eq i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.eq i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes eq {
+  0%,
+  100% {
+    height: 3px;
+  }
+  50% {
+    height: 10px;
+  }
+}
+
+.empty {
+  margin: auto;
+  text-align: center;
+  padding: 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.chipbtn {
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: var(--glass2);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: 0.2s var(--ease);
+}
+.chipbtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.chipbtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- conversation rail ---------------------------------------------
+   The settings pattern: a heading per day over a grouped card, hairlines
+   between rows. Each row is the title, when, and the last thing said. */
+.rail {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.rail-help {
+  margin: 0;
+  padding: 0 5px;
+  line-height: 1.45;
+}
+/* Rows carry their own padding and highlight, so the card only frames. */
+.rail-card {
+  padding: 4px;
+}
+.rail-card > .conv {
+  padding: 0;
+  border-top: none;
+}
+.conv {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+/* The hairline, inset like a settings row; it steps aside for a highlight. */
+.rail-card > .conv + .conv::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--stroke);
+  transition: opacity 0.15s var(--ease);
+}
+.rail-card > .conv:is(:hover, .on)::after,
+.rail-card > .conv:is(:hover, .on) + .conv::after {
+  opacity: 0;
+}
+.conv:hover {
+  background: var(--glass2);
+}
+.conv.on {
+  background: var(--glass2);
+  border-color: var(--stroke2);
+}
+.conv-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  text-align: left;
+}
+.conv-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.conv-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.conv-time {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.conv-preview {
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.conv-preview--empty {
+  font-style: italic;
+  opacity: 0.7;
+}
+/* On hover the actions take the time's place and the text makes room, so
+   nothing ever sits on top of the title. */
+.conv-actions {
+  position: absolute;
+  right: 8px;
+  top: 7px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s var(--ease);
+}
+.conv:hover .conv-actions,
+.conv:focus-within .conv-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.conv:hover .conv-open,
+.conv:focus-within .conv-open {
+  padding-right: 72px;
+}
+.conv:hover .conv-time,
+.conv:focus-within .conv-time {
+  display: none;
+}
+.conv-action {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--muted);
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.conv-action:hover {
+  color: var(--text);
+  background: var(--glass2);
+}
+.conv-action--danger:hover {
+  color: var(--err);
+}
+.conv-confirm {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.conv-confirm-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+.conv-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+.conv-rename {
+  flex: 1;
+  min-width: 0;
+  margin: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: var(--glass2);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  outline: none;
+}
+
+/* --- tools ---------------------------------------------------------- */
+.tool {
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  background: var(--glass2);
+}
+.tool code {
+  font-weight: 700;
+}
+.tool p {
+  margin-top: 4px;
+}
+.toolrun {
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  background: var(--glass2);
+}
+.toolrun summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toolrun pre {
+  margin-top: 8px;
+  font-size: 11.5px;
+  max-height: 190px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 9px;
+  border-radius: 9px;
+}
+
+/* --- disclosure / notice ------------------------------------------- */
+details.disclosure {
+  border-top: 1px solid var(--stroke);
+  padding-top: 10px;
+}
+details.disclosure summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+details.disclosure > *:not(summary) {
+  margin-top: 10px;
+}
+.notice {
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warn-ink);
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.errorbox {
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--err-ink);
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+}
+
+.floating-error {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 26;
+  width: min(680px, 92vw);
+  backdrop-filter: blur(12px);
+}
+
+/* --- pairing sheet (phone login) -------------------------------------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 6, 12, 0.66);
+  backdrop-filter: blur(3px);
+}
+.sheet {
+  width: min(430px, 94vw);
+  max-height: 88vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg2);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 20px;
+}
+.sheet h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.sheet .qr {
+  align-self: center;
+  background: #fff;
+  padding: 10px;
+  border-radius: 12px;
+  line-height: 0;
+}
+.sheet .qr svg {
+  display: block;
+  width: 200px;
+  height: 200px;
+}
+.sheet code.url {
+  word-break: break-all;
+  font-size: 12px;
+}
+.sheet .steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* macOS overlay titlebar: the native title is hidden, so this bar is the only
+   titlebar and the traffic lights float over its left lane. Clear their space.
+   Windows/Linux keep the native titlebar and are unaffected. */
+html[data-os="macos"] .topbar {
+  padding-left: 80px;
+}
+
+/* --- voice command reference ------------------------------------------- */
+/* An explicit gap: `.tool` only gets margins as a direct child of `.stack`,
+   and nesting it silently glued every card to the next one. */
+.cmd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 0 2px;
+}
+.cmd-card {
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-sm);
+  background: var(--glass2);
+  padding: 11px 13px;
+}
+.cmd-desc {
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cmd-phrases {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cmd-phrases code {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  word-break: break-word;
+}
+.command-library-toolbar { padding: var(--space-5) var(--space-5); border-bottom: 1px solid var(--stroke); display: flex; flex-direction: column; gap: var(--space-3); }
+.command-library-toolbar .field-help { margin: 0; }
+.command-library-filters { display: grid; grid-template-columns: minmax(0,2fr) minmax(180px,1fr); gap: var(--space-4); }
+.command-library-meta { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 11px; color: var(--muted); }
+.command-library-body { padding: var(--space-5); gap: var(--space-6); }
+.command-library-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(280px,100%),1fr)); gap: var(--space-4); }
+.command-library-grid .cmd-card { padding: var(--card-padding); border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+.command-primary-example { font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.5; overflow-wrap: anywhere; }
+.command-description { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.5; }
+.command-group-heading { display: flex; justify-content: space-between; align-items: center; }
+.command-group-heading > span { font-size: 11px; font-weight: 400; }
+.command-confirm-label { padding: var(--space-1) var(--space-2); border: 1px solid var(--stroke); border-radius: 6px; font-size: 10px; color: var(--muted); }
+.command-card-meta:empty { display: none; }
+.command-library-grid details { margin-top: auto; font-size: 11px; color: var(--muted); width: 100%; }
+.command-library-grid summary { cursor: pointer; padding: var(--space-1) 0; }
+.command-library-grid .cmd-phrases { margin-top: var(--space-2); gap: var(--space-2); }
+@media (max-width: 640px) { .command-library-filters { grid-template-columns: 1fr; } .command-library-meta { flex-direction: column; gap: var(--space-2); } }
+
+.status-timer {
+  position: relative;
+  flex: none;
+}
+.status-timer-chip {
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.status-timer-chip:hover,
+.status-timer-chip.on {
+  border-color: var(--stroke2);
+  background: var(--glass);
+}
+.status-timer-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 168px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-sm);
+  background: var(--bg2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  z-index: 40;
+}
+.status-timer-item {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.status-timer-item:hover:not(:disabled) {
+  background: var(--glass2);
+}
+.status-timer-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* --- hidden window ---------------------------------------------------
+   A minimized window still reports itself as visible on WebView2, and CSS
+   animations are composited on the GPU, so they kept drawing with the rAF
+   loops already paused — the fan ran for a window nobody could see. The
+   attribute is set by shared/lib/visibleRaf.ts. */
+html[data-window-hidden="true"] *,
+html[data-window-hidden="true"] *::before,
+html[data-window-hidden="true"] *::after {
+  animation-play-state: paused !important;
+}
+
+.conv-providers { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.conv-providers > span { font-size: 10px; font-weight: 500; color: var(--muted); border: 1px solid var(--stroke); border-radius: 4px; padding: var(--space-1) var(--space-2); }
+
+/* Card structure and status placement are shared across settings features. */
+.card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.card-header-copy { min-width: 0; flex: 1; }
+.card-header-title { color: var(--text); font-size: 13px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.card-header-description { margin-top: var(--space-1); color: var(--muted); font-size: 12px; line-height: 1.5; }
+.card-header-trailing { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-3); flex: none; }
+.status-badge { flex: 0 0 auto; white-space: nowrap; line-height: 1.4; font-weight: 600; text-transform: none; letter-spacing: 0; }
+
+.set-card > .card-header { padding: 0 0 var(--control-padding); }
+
+/* Quiet placeholders reserve space; completed content never starts invisible. */
+.content-skeleton { display: grid; gap: var(--space-4); width: 100%; min-width: 0; }
+.content-skeleton--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.content-skeleton-block { display: flex; flex-direction: column; justify-content: center; gap: var(--space-3); min-height: 108px; padding: var(--card-padding); border: 1px solid var(--stroke); border-radius: var(--r-sm); background: var(--glass); }
+.content-skeleton--cards .content-skeleton-block { min-height: 180px; }
+.content-skeleton-line { height: 10px; border-radius: 4px; background: var(--glass2); animation: content-skeleton-pulse 1.6s ease-in-out infinite alternate; }
+.content-skeleton-title { width: 45%; height: 14px; margin-bottom: var(--space-2); }
+.content-skeleton-short { width: 70%; }
+@keyframes content-skeleton-pulse { to { background: var(--stroke); } }
+@media (prefers-reduced-motion: reduce) { .content-skeleton-line { animation: none; } }
+@media (max-width: 600px) { .content-skeleton--cards { grid-template-columns: 1fr; } }
+
+.set-card > .content-skeleton { padding: 0; border: 0; }
+
+.msg-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.msg-footer .t { margin-top: 0; }
+.msg-copy { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; color: inherit; background: transparent; border: 0; border-radius: 6px; padding: 0; cursor: pointer; opacity: 0.65; }
+.msg-copy:hover, .msg-copy:focus-visible { opacity: 1; background: color-mix(in srgb, currentColor 10%, transparent); }
+.msg-copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.msg-copy:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }

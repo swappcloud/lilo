@@ -1,0 +1,30 @@
+{
+  "id": "com.lilo.pomodoro",
+  "name": "Focus timer",
+  "version": "1.2.4",
+  "api": 1,
+  "capabilities": [
+    "storage:self"
+  ],
+  "runtime": "quickjs",
+  "entry": "pomodoro.js",
+  "description": "Start focus sessions and break reminders with a Pomodoro timer.",
+  "localized": {
+    "en": {
+      "name": "Focus timer",
+      "description": "Start focus sessions and break reminders with a Pomodoro timer."
+    },
+    "pt": {
+      "name": "Temporizador de foco",
+      "description": "Inicie sessões de foco e lembretes de pausa com um temporizador Pomodoro."
+    },
+    "it": {
+      "name": "Timer di concentrazione",
+      "description": "Avvia sessioni di concentrazione e promemoria per le pause con un timer Pomodoro."
+    }
+  },
+  "hosts": [
+    "desktop",
+    "daemon"
+  ]
+}

@@ -1,0 +1,107 @@
+import { messages } from "../types";
+
+/** Language picker and the spoken-command reference. */
+export const commands = messages({
+  en: {
+    "language.title": "Language",
+    "language.label": "Conversation language",
+    "language.help":
+      "Sets the interface and conversation language. Commands remain available in all supported languages. Currently {language}.",
+    "language.auto": "Automatic (system)",
+    "language.pt": "Português (Brasil)",
+    "language.en": "English (US)",
+    "language.it": "Italiano",
+
+    "commands.title": "Voice commands",
+    "commands.search": "Find a command",
+    "commands.searchPlaceholder": "Try notes, study, music…",
+    "commands.category": "Category",
+    "commands.all": "All categories",
+    "commands.count": "{count} commands",
+    "commands.placeholderHint": "Replace words inside <brackets> with your own.",
+    "commands.loading": "Loading your commands…",
+    "commands.loadFailed": "Commands could not be loaded. Close and reopen this panel to retry.",
+    "commands.noMatches": "No commands match. Try another phrase or category.",
+    "commands.confirmation": "Asks before running",
+    "commands.moreExamples": "{count} more examples",
+    "commands.intro":
+      "Say these during a live conversation. Words in <angle brackets> are yours to fill in. Commands work in all supported languages.",
+    "commands.groupMusic": "Music",
+    "commands.groupConversation": "Conversation",
+    "commands.groupOther": "Other",
+    "commands.needsDesktop":
+      "The command list comes from the Rust backend — run the desktop app to see it.",
+    "commands.wakeHint": "To start hands-free, say “{phrase}”.",
+    "confirm.title": "Confirm this command?",
+    "confirm.yes": "Run it",
+    "confirm.no": "Cancel",
+  },
+  pt: {
+    "language.title": "Idioma",
+    "language.label": "Idioma da conversa",
+    "language.help":
+      "Define o idioma da interface e da conversa. Os comandos continuam disponíveis em todos os idiomas suportados. Atualmente {language}.",
+    "language.auto": "Automático (sistema)",
+    "language.pt": "Português (Brasil)",
+    "language.en": "English (US)",
+    "language.it": "Italiano",
+
+    "commands.title": "Comandos de voz",
+    "commands.search": "Encontrar um comando",
+    "commands.searchPlaceholder": "Busque notas, estudo, música…",
+    "commands.category": "Categoria",
+    "commands.all": "Todas as categorias",
+    "commands.count": "{count} comandos",
+    "commands.placeholderHint": "Troque palavras entre <sinais> pelas suas.",
+    "commands.loading": "Carregando seus comandos…",
+    "commands.loadFailed": "Não foi possível carregar os comandos. Feche e reabra este painel para tentar novamente.",
+    "commands.noMatches": "Nenhum comando encontrado. Tente outra frase ou categoria.",
+    "commands.confirmation": "Pede confirmação",
+    "commands.moreExamples": "Mais {count} exemplos",
+    "commands.intro":
+      "Diga durante uma conversa ao vivo. Preencha as palavras entre <sinais>. Os comandos funcionam em todos os idiomas suportados.",
+    "commands.groupMusic": "Música",
+    "commands.groupConversation": "Conversa",
+    "commands.groupOther": "Outros",
+    "commands.needsDesktop":
+      "A lista de comandos vem do backend Rust — rode o app desktop para vê-la.",
+    "commands.wakeHint": "Para começar mãos livres, diga “{phrase}”.",
+    "confirm.title": "Confirmar este comando?",
+    "confirm.yes": "Executar",
+    "confirm.no": "Cancelar",
+  },
+  it: {
+    "language.title": "Lingua",
+    "language.label": "Lingua della conversazione",
+    "language.help":
+      "Imposta la lingua dell’interfaccia e della conversazione. I comandi restano disponibili in tutte le lingue supportate. Attualmente {language}.",
+    "language.auto": "Automatica (sistema)",
+    "language.pt": "Português (Brasil)",
+    "language.en": "English (US)",
+    "language.it": "Italiano",
+
+    "commands.title": "Comandi vocali",
+    "commands.search": "Trova un comando",
+    "commands.searchPlaceholder": "Cerca note, studio, musica…",
+    "commands.category": "Categoria",
+    "commands.all": "Tutte le categorie",
+    "commands.count": "{count} comandi",
+    "commands.placeholderHint": "Sostituisci le parole tra <parentesi> con le tue.",
+    "commands.loading": "Caricamento dei comandi…",
+    "commands.loadFailed": "Impossibile caricare i comandi. Chiudi e riapri il pannello per riprovare.",
+    "commands.noMatches": "Nessun comando corrisponde. Prova un’altra frase o categoria.",
+    "commands.confirmation": "Richiede conferma",
+    "commands.moreExamples": "Altri {count} esempi",
+    "commands.intro":
+      "Pronuncia questi comandi durante una conversazione. Sostituisci le parole tra <parentesi>. I comandi funzionano in tutte le lingue supportate.",
+    "commands.groupMusic": "Musica",
+    "commands.groupConversation": "Conversazione",
+    "commands.groupOther": "Altro",
+    "commands.needsDesktop":
+      "L'elenco dei comandi arriva dal backend Rust — avvia l'app desktop per vederlo.",
+    "commands.wakeHint": "Per iniziare a mani libere, pronuncia “{phrase}”.",
+    "confirm.title": "Confermare questo comando?",
+    "confirm.yes": "Esegui",
+    "confirm.no": "Annulla",
+  },
+});

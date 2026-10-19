@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>This app records your microphone to have a real-time voice conversation.</string>
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>LILO listens for your wake phrase (e.g. "hello lilo") to start a conversation hands-free.</string>
+  <key>NSHumanReadableCopyright</key>
+  <string>Listen In. Listen Out. — Your voice interface for AI</string>
+</dict>
+</plist>

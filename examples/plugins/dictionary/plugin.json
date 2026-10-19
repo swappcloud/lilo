@@ -1,0 +1,23 @@
+{
+  "id": "com.lilo.dictionary",
+  "name": "English vocabulary notebook",
+  "description": "Look up English words with Free Dictionary API and explicitly save definitions for later review.",
+  "localized": {
+    "pt": {
+      "name": "Caderno de vocabulário inglês",
+      "description": "Consulte palavras inglesas e salve definições para revisar depois."
+    },
+    "it": {
+      "name": "Quaderno di vocabolario inglese",
+      "description": "Consulta parole inglesi e salva le definizioni da ripassare."
+    }
+  },
+  "version": "1.1.0",
+  "api": 1,
+  "runtime": "quickjs",
+  "entry": "dictionary.js",
+  "capabilities": [
+    "storage:self",
+    "http:api.dictionaryapi.dev"
+  ]
+}

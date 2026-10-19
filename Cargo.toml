@@ -1,0 +1,58 @@
+# Workspace root.
+#
+# `lilo-core` holds everything that must also run headless on a headless Linux device:
+# the command protocol, media playback and the tool registry. It must never
+# depend on `tauri`. `src-tauri` is the desktop app and keeps the WebView,
+# login, SDP gateway and phone-login server.
+[workspace]
+resolver = "2"
+members = ["src-tauri", "crates/lilo-core", "crates/lilo-daemon"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77.2"
+authors = ["LILO"]
+license = "GPL-3.0-only"
+
+# Debug builds carry full debug info for every dependency by default, and that
+# is most of a multi-gigabyte `target/`. Line tables on our own crates keep
+# panic locations useful; the third-party code we never step into does not
+# need symbols at all.
+[profile.dev]
+debug = 1
+
+[profile.dev.package."*"]
+debug = false
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "multipart",
+    "rustls-tls",
+] }
+windows = { version = "0.61", default-features = false }
+windows-collections = "0.2"
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+    "macros",
+    "time",
+    "net",
+    "io-util",
+    "io-std",
+    "process",
+    "sync",
+    "signal",
+] }
+uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"
+chrono = { version = "0.4", features = ["clock"] }
+chrono-tz = "0.10"
+iana-time-zone = "0.1"
+dirs = "6"
+toml = "0.8"
+sha2 = "0.10"

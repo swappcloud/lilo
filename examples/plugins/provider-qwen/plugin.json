@@ -1,0 +1,13 @@
+{
+  "id": "com.lilo.provider.qwen",
+  "name": "Qwen voice",
+  "description": "Qwen web voice adapter with plugin-owned protocol and an isolated sign-in browser.",
+  "version": "0.1.1",
+  "api": 1,
+  "capabilities": [
+    "provider:voice",
+    "web:chat.qwen.ai"
+  ],
+  "runtime": "quickjs",
+  "entry": "provider.js"
+}

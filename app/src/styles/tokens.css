@@ -1,0 +1,71 @@
+/* Design tokens — dark by default, light via [data-theme="light"]. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --page-padding: var(--space-5);
+  --card-padding: var(--space-4);
+  --control-padding: var(--space-3);
+  --bg: #070b14;
+  --bg2: #0b1220;
+  --glass: rgba(255, 255, 255, 0.055);
+  --glass2: rgba(255, 255, 255, 0.09);
+  --stroke: rgba(255, 255, 255, 0.12);
+  --stroke2: rgba(255, 255, 255, 0.2);
+  --text: #f1f5f9;
+  --muted: #8fa0b8;
+  /* Opaque surface for native popups (`<select>` options): they are drawn
+     outside the glass, where a translucent background flattens to white. */
+  --field-solid: #101827;
+
+  --accent: #6366f1;
+  --accent2: #a855f7;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --warn-ink: #f3ddb0;
+  --err-ink: #ffd9dc;
+
+  /* Live accent glow channels, driven by the orb visualizer. */
+  --c1: rgb(99, 102, 241);
+  --c2: rgb(168, 85, 247);
+  --c1a: rgba(99, 102, 241, 0.5);
+  --c2a: rgba(168, 85, 247, 0.42);
+
+  /* The LILO mark and character. Ink is the accent gradient; paper follows
+     the theme. */
+  --lilo-paper: #0b1220;
+  --lilo-shadow: #000000;
+
+  --r: 20px;
+  --r-sm: 12px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* System stack only: the Tauri CSP forbids remote fonts. */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, system-ui,
+    sans-serif;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  /* Neutral, not blue: the brand artboard greys, so the palette is the only
+     colour on screen. */
+  --bg: #eceef0;
+  --bg2: #f8f9fa;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass2: rgba(255, 255, 255, 0.8);
+  --stroke: rgba(15, 23, 42, 0.1);
+  --stroke2: rgba(15, 23, 42, 0.18);
+  --text: #0d1117;
+  --muted: #5b6470;
+  --field-solid: #ffffff;
+  --warn: #b45309;
+  --warn-ink: #92400e;
+  --err-ink: #b91c1c;
+  --lilo-paper: #ffffff;
+  --lilo-shadow: #0b0b0c;
+  color-scheme: light;
+}

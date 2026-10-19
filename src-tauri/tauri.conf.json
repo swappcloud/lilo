@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LILO",
+  "version": "0.1.0",
+  "identifier": "com.lilo.app",
+  "build": {
+    "beforeDevCommand": "npm exec vite",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "create": false,
+        "title": "LILO",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "width": 1120,
+        "height": 780,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true,
+        "transparent": true,
+        "visible": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port=0"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' blob: mediastream:; connect-src 'self' ws://localhost:1420 http://localhost:1420"
+    }
+  },
+  "bundle": {
+    "createUpdaterArtifacts": true,
+    "active": true,
+    "targets": "all",
+    "resources": {
+      "../examples/plugins/": "plugins/",
+      "../LICENSE": "LICENSE"
+    },
+    "macOS": {
+      "signingIdentity": "-",
+      "infoPlist": "Info.plist"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/installer-hooks.nsh",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico"
+      }
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJBNTU0MzQ0Q0Y4NzJFNUEKUldSYUxvZlBSRU5WS2cwU2NOWjNLS1dLY0VkVjNBVmovNkdQNUljT3kxVXd3bEdxTmxDbXB2NkkK",
+      "endpoints": [],
+      "windows": { "installMode": "passive" }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "com.lilo.desktop",
+  "name": "Desktop control",
+  "version": "0.1.1",
+  "api": 1,
+  "runtime": "quickjs",
+  "entry": "desktop.js",
+  "platforms": ["windows", "macos", "linux"],
+  "capabilities": ["desktop:apps", "desktop:text"],
+  "description": "Open installed applications and insert literal text into a supported field in a named application."
+}

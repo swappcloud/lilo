@@ -1,0 +1,126 @@
+.daemon-shell {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow-y: auto;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-host="daemon"] *,
+html[data-host="daemon"] *::before,
+html[data-host="daemon"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+.daemon-shell > .daemon-error {
+  position: fixed;
+  z-index: 80;
+  top: max(12px, env(safe-area-inset-top));
+  left: 16px;
+  right: 16px;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.daemon-home {
+  max-width: 900px;
+  margin-inline: auto;
+  padding-block: 24px 112px;
+}
+
+.daemon-home > header { margin-bottom: 24px; }
+.daemon-home h1 { margin: 0 0 8px; font-size: 24px; }
+.daemon-home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.daemon-app-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.daemon-brand { display: block; font-size: 12px; letter-spacing: .12em; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.daemon-app-nav { position: fixed; z-index: 30; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 900px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 8px 12px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid var(--stroke); background: var(--bg); }
+.daemon-app-nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 56px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.daemon-app-nav button[aria-current="page"] { background: var(--glass2); color: var(--accent); }
+.daemon-music { display: flex; flex-direction: column; gap: 24px; }
+.daemon-music .player { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; padding: 16px; margin: 0; border: 1px solid var(--stroke); border-radius: 14px; background: var(--glass); }
+.daemon-music .player-artwork { width: 64px; height: 64px; }
+.daemon-music .player:not(:has(.player-artwork)) .player-info { grid-column: 1 / -1; }
+.daemon-music .player-controls { grid-column: 1 / -1; justify-content: center; gap: 16px; }
+.daemon-music .player-btn { width: 48px; height: 48px; }
+.daemon-music .player-title { max-width: none; white-space: normal; font-size: 16px; }
+.daemon-music .player-state { max-width: none; white-space: normal; font-size: 12px; letter-spacing: 0; text-transform: none; margin-bottom: 8px; }
+.daemon-music .music-search-results li { border: 1px solid var(--stroke); border-radius: 12px; padding: 12px; background: var(--glass2); }
+.daemon-music .music-search-results .btn { width: 44px; height: 44px; flex: none; padding: 0; border-radius: 50%; }
+
+.daemon-shell .settings-overlay {
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+
+.daemon-shell .settings-modal {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+}
+
+.daemon-shell .settings-main,
+.daemon-shell .settings-body { min-height: 0; }
+.settings-compact-nav { display: none; }
+
+html[data-host="daemon"] .browser-sheet {
+  box-sizing: border-box;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 0;
+  width: min(100% - 24px, 480px);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+html[data-host="daemon"] .browser-sheet::backdrop { background: rgb(0 0 0 / 45%); }
+html[data-host="daemon"] .browser-sheet-content { padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+html[data-host="daemon"] .browser-sheet h2 { margin: 0; font-size: 18px; }
+html[data-host="daemon"] .browser-image { padding: 0; border: 1px solid var(--stroke); border-radius: 8px; overflow: hidden; background: var(--bg); cursor: pointer; width: 100%; }
+html[data-host="daemon"] .browser-image img { display: block; width: 100%; height: auto; }
+html[data-host="daemon"] .browser-answer { display: flex; flex-direction: column; gap: 8px; margin-block: 12px; }
+
+.daemon-voice-account { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.daemon-voice-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-block: 16px; }
+.daemon-voice-controls > :first-child { grid-column: 1 / -1; }
+.daemon-voice-text { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; }
+.daemon-voice-captions { min-width: 0; }
+.daemon-voice-captions h2 { margin: 0 0 12px; font-size: 15px; }
+.daemon-voice-captions ol { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; margin: 0; padding: 0; list-style: none; overscroll-behavior: contain; }
+.daemon-voice-caption { display: grid; gap: 4px; min-width: 0; padding: 10px 12px; border: 1px solid var(--stroke); border-radius: 8px; background: var(--glass2); overflow-wrap: anywhere; }
+.daemon-voice-caption strong { font-size: 12px; color: var(--muted); }
+
+@media (max-width: 600px) {
+  .daemon-shell { padding-inline: 0; }
+  .daemon-home { padding: 24px 16px 112px; padding-top: max(24px, env(safe-area-inset-top)); }
+  .daemon-home > header { margin-bottom: 16px; }
+  .daemon-voice-controls { gap: 8px; }
+  .daemon-shell .settings-overlay { padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  .daemon-shell .settings-nav { display: none; }
+  .daemon-shell .settings-compact-nav { display: block; flex: none; padding: 12px 16px; border-bottom: 1px solid var(--stroke); }
+  .daemon-shell .settings-compact-nav label { display: flex; flex-direction: column; gap: 8px; }
+  .daemon-shell .settings-compact-nav select { width: 100%; min-height: 44px; font-size: 16px; }
+  .daemon-shell .settings-main { flex: 1; overflow: hidden; }
+  .daemon-shell .settings-head { padding: 12px 16px; }
+  .daemon-shell .settings-body { padding: 16px; overscroll-behavior: contain; }
+  .daemon-shell .settings-overview-grid { grid-template-columns: 1fr; }
+  .daemon-shell .field { max-width: 100%; }
+  .daemon-shell .plugin-row-controls { flex-wrap: wrap; }
+}
+
+@media (max-width: 420px) {
+  .daemon-voice-text { grid-template-columns: 1fr; }
+  .daemon-home-actions > button { flex: 1; }
+}
+
+.daemon-session-control { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; flex: none; padding: 12px 16px; border-bottom: 1px solid var(--stroke); }
+.daemon-session-control p { margin: 0; flex: 1 1 160px; }

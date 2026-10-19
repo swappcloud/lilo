@@ -1,0 +1,310 @@
+import { messages } from "../types";
+
+/** Settings: audio devices, appearance and hands-free wake word. */
+export const settingsAudio = messages({
+  en: {
+    "devices.permissionNoticeGeneral": "Allow microphone access to list available audio devices.",
+    "devices.title": "Audio devices",
+    "devices.permissionNotice":
+      "macOS hides audio devices until the microphone is allowed once — an external mic or headset will not appear before that.",
+    "devices.allowMic": "Allow microphone",
+    "devices.refreshed": "Audio devices refreshed",
+    "devices.microphone": "Microphone",
+    "devices.output": "Output / speaker",
+    "devices.systemDefault": "System default",
+    "devices.appliedLive": "Applied live to the running session.",
+    "devices.nextSession": "Used on the next session.",
+    "devices.outputHelp": "Choose where the assistant's voice plays.",
+    "devices.outputUnsupported":
+      "This webview does not support output selection. The system default will be used.",
+    "devices.counts": "{inputs} input(s) · {outputs} output(s)",
+    "devices.refresh": "Refresh",
+    "devices.footer":
+      "Device names appear after you grant microphone access once. If a newly plugged device is missing, press Refresh.",
+    "devices.micSwitched": "Microphone switched",
+    "devices.micDefault": "Using default microphone",
+    "devices.outputSwitched": "Output switched",
+    "devices.outputDefault": "Using default output",
+
+    "appearance.title": "Appearance & interaction",
+    "appearance.look": "Look",
+    "appearance.interaction": "Interaction",
+    "appearance.theme": "Theme",
+    "appearance.themeSystem": "System",
+    "appearance.themeLight": "Light",
+    "appearance.themeDark": "Dark",
+    "appearance.palette": "Color palette",
+    "appearance.paletteHelp":
+      "Colors LILO, the background glow, buttons and highlights.",
+    "appearance.colorFrom": "Start color",
+    "appearance.colorTo": "End color",
+    "palette.indigo": "Indigo",
+    "palette.ocean": "Ocean",
+    "palette.lagoon": "Lagoon",
+    "palette.mint": "Mint",
+    "palette.sunset": "Sunset",
+    "palette.ember": "Ember",
+    "palette.berry": "Berry",
+    "palette.graphite": "Graphite",
+    "palette.custom": "Custom",
+    "appearance.animations": "Animations",
+    "appearance.animationsHelp":
+      "Turn off for maximum performance: skips the aurora, pulses and the visualizer animation loop.",
+    "appearance.visualizer": "Visualizer",
+    "appearance.bargeIn": "Barge-in detection",
+    "appearance.bargeInHelp":
+      "While the assistant is speaking, talk over it to cut it off and take the turn. Sensitivity sets how easily your voice triggers it (higher = quieter/sooner). Applies to the real ChatGPT voice backend.",
+    "appearance.sensitivity": "Sensitivity",
+    "appearance.sensitivityHelp": "Higher values let quieter speech interrupt the assistant; lower values require a stronger voice.",
+    "appearance.lilo": "LILO",
+    "appearance.orb": "Orb",
+    "appearance.bars": "Bars",
+
+    "wake.title": "Hands-free",
+    "wake.wakeWord": "Wake word",
+    "wake.status": "Status",
+    "wake.blocked": "Blocked",
+    "wake.unavailable": "Unavailable here",
+    "wake.off": "Off",
+    "wake.inCall": "In call",
+    "wake.listening": "Listening",
+    "wake.notListening": "Not listening",
+    "wake.starting": "Starting…",
+    "wake.listenerDown": "The wake listener is not running. Check microphone permission.",
+    "wake.listenerDownMac": "Allow Microphone and Speech Recognition for the LILO helper.",
+    "wake.listenerDownWindows": "Allow microphone access and install the speech language pack.",
+    "wake.help":
+      "While LILO is open, say your wake phrase to start a new conversation in listening mode — then LILO greets you and asks how it can help.",
+    "wake.unsupported":
+      "This webview doesn't expose speech recognition and this platform has no native wake listener, so the voice wake word can't run here. The Windows and macOS builds have one. Elsewhere, press-to-talk is the way in.",
+    "wake.phrase": "Wake phrase",
+    "wake.phraseHelp": "Two or three words work best for reliable detection.",
+    "wake.endCallHelp":
+      "To end a live call by voice, say a verb plus the last word of your wake phrase — e.g. “close lilo” (stop / end / goodbye / quit also work).",
+    "wake.greeting": "Greeting on wake",
+    "wake.greetingHelp":
+      "The opening message LILO receives when activated by voice. Follows the conversation language until you edit it.",
+    "wake.useDefault": "Use the default for my language",
+    "wake.systemPrompt": "System prompt (persona)",
+    "wake.systemPromptHelp":
+      "Sent as the first message of every new conversation (hidden from the transcript) so the model knows it is LILO. Follows the conversation language until you edit it. Clear it to disable.",
+    "wake.micNotice":
+      "The wake word keeps the microphone open while LILO is running. Starting the app from fully closed needs a background service or an OS hotkey.",
+    "wake.blockDictationTitle": "Dictation is turned off",
+    "wake.blockDictationBody":
+      "macOS speech recognition only runs when Dictation is enabled, so the wake word cannot hear anything until you turn it on.",
+    "wake.blockDictationAction": "Open Dictation settings",
+    "wake.blockDeniedTitle": "Microphone access was denied",
+    "wake.blockDeniedBody":
+      "The wake word needs permission to listen. Allow the microphone and try again.",
+    "wake.blockNoEngineTitle": "No speech engine here",
+    "wake.blockNoEngineBody":
+      "This platform has no speech recognition available to the app, so press-to-talk is the way in.",
+    "wake.blockFailedTitle": "The wake word listener failed",
+    "wake.blockFailedBody": "Speech recognition stopped responding.",
+  },
+  pt: {
+    "devices.permissionNoticeGeneral": "Permita o acesso ao microfone para listar os dispositivos de áudio disponíveis.",
+    "devices.title": "Dispositivos de áudio",
+    "devices.permissionNotice":
+      "O macOS esconde os dispositivos de áudio até o microfone ser permitido uma vez — um microfone externo ou headset não aparece antes disso.",
+    "devices.allowMic": "Permitir microfone",
+    "devices.refreshed": "Dispositivos de áudio atualizados",
+    "devices.microphone": "Microfone",
+    "devices.output": "Saída / alto-falante",
+    "devices.systemDefault": "Padrão do sistema",
+    "devices.appliedLive": "Aplicado ao vivo na sessão em execução.",
+    "devices.nextSession": "Usado na próxima sessão.",
+    "devices.outputHelp": "Escolha onde a voz do assistente toca.",
+    "devices.outputUnsupported":
+      "Esta webview não permite selecionar a saída. Será usada a saída padrão do sistema.",
+    "devices.counts": "{inputs} entrada(s) · {outputs} saída(s)",
+    "devices.refresh": "Atualizar",
+    "devices.footer":
+      "Os nomes dos dispositivos aparecem após você permitir o microfone uma vez. Se um dispositivo recém-conectado não aparecer, toque em Atualizar.",
+    "devices.micSwitched": "Microfone trocado",
+    "devices.micDefault": "Usando o microfone padrão",
+    "devices.outputSwitched": "Saída trocada",
+    "devices.outputDefault": "Usando a saída padrão",
+
+    "appearance.title": "Aparência e interação",
+    "appearance.look": "Visual",
+    "appearance.interaction": "Interação",
+    "appearance.theme": "Tema",
+    "appearance.themeSystem": "Sistema",
+    "appearance.themeLight": "Claro",
+    "appearance.themeDark": "Escuro",
+    "appearance.palette": "Paleta de cores",
+    "appearance.paletteHelp":
+      "Colore o LILO, o brilho do fundo, os botões e os destaques.",
+    "appearance.colorFrom": "Cor inicial",
+    "appearance.colorTo": "Cor final",
+    "palette.indigo": "Índigo",
+    "palette.ocean": "Oceano",
+    "palette.lagoon": "Lagoa",
+    "palette.mint": "Menta",
+    "palette.sunset": "Pôr do sol",
+    "palette.ember": "Brasa",
+    "palette.berry": "Amora",
+    "palette.graphite": "Grafite",
+    "palette.custom": "Personalizada",
+    "appearance.animations": "Animações",
+    "appearance.animationsHelp":
+      "Desligue para desempenho máximo: pula a aurora, os pulsos e o laço de animação do visualizador.",
+    "appearance.visualizer": "Visualizador",
+    "appearance.bargeIn": "Detecção de interrupção",
+    "appearance.bargeInHelp":
+      "Enquanto o assistente fala, fale por cima para cortá-lo e assumir a vez. A sensibilidade define a facilidade com que sua voz dispara isso (maior = mais baixo/rápido). Vale para o backend de voz real do ChatGPT.",
+    "appearance.sensitivity": "Sensibilidade",
+    "appearance.sensitivityHelp": "Valores maiores permitem interromper o assistente com fala mais baixa; valores menores exigem uma voz mais forte.",
+    "appearance.lilo": "LILO",
+    "appearance.orb": "Orbe",
+    "appearance.bars": "Barras",
+
+    "wake.title": "Mãos livres",
+    "wake.wakeWord": "Palavra de ativação",
+    "wake.status": "Status",
+    "wake.blocked": "Bloqueado",
+    "wake.unavailable": "Indisponível aqui",
+    "wake.off": "Desligado",
+    "wake.inCall": "Em chamada",
+    "wake.listening": "Ouvindo",
+    "wake.notListening": "Não está ouvindo",
+    "wake.starting": "Iniciando…",
+    "wake.listenerDown": "O ouvinte de ativação não está rodando. Verifique a permissão do microfone.",
+    "wake.listenerDownMac": "Permita Microfone e Reconhecimento de Fala para o helper do LILO.",
+    "wake.listenerDownWindows": "Permita o microfone e instale o pacote do idioma de fala.",
+    "wake.help":
+      "Com o LILO aberto, diga sua frase de ativação para iniciar uma nova conversa no modo escuta — o LILO cumprimenta e pergunta como pode ajudar.",
+    "wake.unsupported":
+      "Esta webview não expõe reconhecimento de fala e esta plataforma não tem listener nativo, então a palavra de ativação não roda aqui. As builds de Windows e macOS têm um. No resto, o press-to-talk é o caminho.",
+    "wake.phrase": "Frase de ativação",
+    "wake.phraseHelp":
+      "Duas ou três palavras funcionam melhor para detecção confiável.",
+    "wake.endCallHelp":
+      "Para encerrar uma chamada por voz, diga um verbo mais a última palavra da sua frase de ativação — ex.: “fecha lilo” (para / encerra / desliga / tchau também funcionam).",
+    "wake.greeting": "Saudação ao ativar",
+    "wake.greetingHelp":
+      "A mensagem inicial que o LILO recebe ao ser ativado por voz. Segue o idioma da conversa até você editá-la.",
+    "wake.useDefault": "Usar o padrão do meu idioma",
+    "wake.systemPrompt": "Prompt de sistema (persona)",
+    "wake.systemPromptHelp":
+      "Enviado como a primeira mensagem de cada nova conversa (oculto da transcrição) para o modelo saber que é o LILO. Segue o idioma da conversa até você editá-lo. Limpe para desativar.",
+    "wake.micNotice":
+      "A palavra de ativação mantém o microfone aberto enquanto o LILO roda. Iniciar o app totalmente fechado exige um serviço em segundo plano ou um atalho do sistema.",
+    "wake.blockDictationTitle": "O Ditado está desligado",
+    "wake.blockDictationBody":
+      "O reconhecimento de fala do macOS só roda com o Ditado ativado, então a palavra de ativação não ouve nada até você ligá-lo.",
+    "wake.blockDictationAction": "Abrir ajustes do Ditado",
+    "wake.blockDeniedTitle": "Acesso ao microfone negado",
+    "wake.blockDeniedBody":
+      "A palavra de ativação precisa de permissão para ouvir. Permita o microfone e tente novamente.",
+    "wake.blockNoEngineTitle": "Sem motor de fala aqui",
+    "wake.blockNoEngineBody":
+      "Esta plataforma não oferece reconhecimento de fala ao app, então falar-e-seguir é o caminho.",
+    "wake.blockFailedTitle": "O ouvinte da palavra de ativação falhou",
+    "wake.blockFailedBody": "O reconhecimento de fala parou de responder.",
+  },
+  it: {
+    "devices.permissionNoticeGeneral": "Consenti l’accesso al microfono per elencare i dispositivi audio disponibili.",
+    "devices.title": "Dispositivi audio",
+    "devices.permissionNotice":
+      "macOS nasconde i dispositivi audio finché non concedi una volta il microfono — un microfono esterno o un headset non compare prima.",
+    "devices.allowMic": "Consenti microfono",
+    "devices.refreshed": "Dispositivi audio aggiornati",
+    "devices.microphone": "Microfono",
+    "devices.output": "Uscita / altoparlante",
+    "devices.systemDefault": "Predefinito di sistema",
+    "devices.appliedLive": "Applicato subito alla sessione in corso.",
+    "devices.nextSession": "Usato nella prossima sessione.",
+    "devices.outputHelp": "Scegli dove suona la voce dell'assistente.",
+    "devices.outputUnsupported":
+      "Questa webview non permette di scegliere l’uscita audio. Verrà usata l’uscita predefinita del sistema.",
+    "devices.counts": "{inputs} ingresso/i · {outputs} uscita/e",
+    "devices.refresh": "Aggiorna",
+    "devices.footer":
+      "I nomi dei dispositivi compaiono dopo che concedi il microfono una volta. Se un dispositivo appena collegato manca, premi Aggiorna.",
+    "devices.micSwitched": "Microfono cambiato",
+    "devices.micDefault": "Uso il microfono predefinito",
+    "devices.outputSwitched": "Uscita cambiata",
+    "devices.outputDefault": "Uso l'uscita predefinita",
+
+    "appearance.title": "Aspetto e interazione",
+    "appearance.look": "Stile",
+    "appearance.interaction": "Interazione",
+    "appearance.theme": "Tema",
+    "appearance.themeSystem": "Sistema",
+    "appearance.themeLight": "Chiaro",
+    "appearance.themeDark": "Scuro",
+    "appearance.palette": "Palette colori",
+    "appearance.paletteHelp":
+      "Colora LILO, il bagliore di sfondo, i pulsanti e le evidenziazioni.",
+    "appearance.colorFrom": "Colore iniziale",
+    "appearance.colorTo": "Colore finale",
+    "palette.indigo": "Indaco",
+    "palette.ocean": "Oceano",
+    "palette.lagoon": "Laguna",
+    "palette.mint": "Menta",
+    "palette.sunset": "Tramonto",
+    "palette.ember": "Brace",
+    "palette.berry": "Bacca",
+    "palette.graphite": "Grafite",
+    "palette.custom": "Personalizzata",
+    "appearance.animations": "Animazioni",
+    "appearance.animationsHelp":
+      "Disattiva per il massimo delle prestazioni: salta l'aurora, gli impulsi e il ciclo di animazione del visualizzatore.",
+    "appearance.visualizer": "Visualizzatore",
+    "appearance.bargeIn": "Rilevamento dell'interruzione",
+    "appearance.bargeInHelp":
+      "Mentre l'assistente parla, parlaci sopra per fermarlo e prendere il turno. La sensibilità decide quanto facilmente la tua voce lo attiva (più alta = più piano/subito). Vale per il backend vocale reale di ChatGPT.",
+    "appearance.sensitivity": "Sensibilità",
+    "appearance.sensitivityHelp": "Valori più alti permettono di interrompere l’assistente parlando piano; valori più bassi richiedono una voce più forte.",
+    "appearance.lilo": "LILO",
+    "appearance.orb": "Orb",
+    "appearance.bars": "Barre",
+
+    "wake.title": "A mani libere",
+    "wake.wakeWord": "Parola di attivazione",
+    "wake.status": "Stato",
+    "wake.blocked": "Bloccato",
+    "wake.unavailable": "Non disponibile qui",
+    "wake.off": "Spento",
+    "wake.inCall": "In chiamata",
+    "wake.listening": "In ascolto",
+    "wake.notListening": "Non in ascolto",
+    "wake.starting": "Avvio…",
+    "wake.listenerDown": "Il listener di attivazione non è in esecuzione. Controlla il permesso del microfono.",
+    "wake.listenerDownMac": "Consenti Microfono e Riconoscimento vocale per il helper di LILO.",
+    "wake.listenerDownWindows": "Consenti il microfono e installa il pacchetto della lingua vocale.",
+    "wake.help":
+      "Con LILO aperto, pronuncia la tua frase di attivazione per iniziare una nuova conversazione in modalità ascolto — poi LILO ti saluta e chiede come può aiutarti.",
+    "wake.unsupported":
+      "Questa webview non espone il riconoscimento vocale e questa piattaforma non ha un listener nativo, quindi la parola di attivazione non può funzionare qui. Le build Windows e macOS ne hanno uno. Altrove, il push-to-talk resta la via.",
+    "wake.phrase": "Frase di attivazione",
+    "wake.phraseHelp":
+      "Due o tre parole funzionano meglio per un rilevamento affidabile.",
+    "wake.endCallHelp":
+      "Per terminare una chiamata a voce, di' un verbo più l'ultima parola della tua frase di attivazione — es. “chiudi lilo” (stop / fine / chiudi / ciao funzionano pure).",
+    "wake.greeting": "Saluto all'attivazione",
+    "wake.greetingHelp":
+      "Il messaggio iniziale che LILO riceve quando lo attivi a voce. Segue la lingua della conversazione finché non lo modifichi.",
+    "wake.useDefault": "Usa il predefinito della mia lingua",
+    "wake.systemPrompt": "Prompt di sistema (persona)",
+    "wake.systemPromptHelp":
+      "Inviato come primo messaggio di ogni nuova conversazione (nascosto dalla trascrizione) così il modello sa di essere LILO. Segue la lingua della conversazione finché non lo modifichi. Svuotalo per disattivarlo.",
+    "wake.micNotice":
+      "La parola di attivazione tiene il microfono aperto mentre LILO è in esecuzione. Avviare l'app da spenta richiede un servizio in background o una scorciatoia di sistema.",
+    "wake.blockDictationTitle": "La dettatura è disattivata",
+    "wake.blockDictationBody":
+      "Il riconoscimento vocale di macOS funziona solo con la Dettatura attiva, quindi la parola di attivazione non sente nulla finché non la accendi.",
+    "wake.blockDictationAction": "Apri le impostazioni della Dettatura",
+    "wake.blockDeniedTitle": "Accesso al microfono negato",
+    "wake.blockDeniedBody":
+      "La parola di attivazione ha bisogno del permesso di ascoltare. Consenti il microfono e riprova.",
+    "wake.blockNoEngineTitle": "Nessun motore vocale qui",
+    "wake.blockNoEngineBody":
+      "Questa piattaforma non offre il riconoscimento vocale all'app, quindi il push-to-talk è la via.",
+    "wake.blockFailedTitle": "Il listener della parola di attivazione è fallito",
+    "wake.blockFailedBody": "Il riconoscimento vocale ha smesso di rispondere.",
+  },
+});

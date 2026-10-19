@@ -1,0 +1,30 @@
+{
+  "id": "com.lilo.hello",
+  "name": "Greeting example",
+  "version": "1.0.5",
+  "api": 1,
+  "capabilities": [
+    "storage:self"
+  ],
+  "runtime": "quickjs",
+  "entry": "hello.js",
+  "description": "A sample plugin that greets you and demonstrates plugin settings.",
+  "localized": {
+    "en": {
+      "name": "Greeting example",
+      "description": "A sample plugin that greets you and demonstrates plugin settings."
+    },
+    "pt": {
+      "name": "Exemplo de saudação",
+      "description": "Um plugin de exemplo que cumprimenta você e demonstra as configurações de plugins."
+    },
+    "it": {
+      "name": "Esempio di saluto",
+      "description": "Un plugin di esempio che ti saluta e mostra come funzionano le impostazioni dei plugin."
+    }
+  },
+  "hosts": [
+    "desktop",
+    "daemon"
+  ]
+}
