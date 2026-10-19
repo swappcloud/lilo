@@ -68,6 +68,18 @@ function files(dir) {
   });
 }
 
+/** Locate artifact groups by their audited report, independent of extraction layout. */
+export function discoverTargetArtifacts(root) {
+  const groups = new Map();
+  for (const reportPath of files(root).filter((file) => basename(file) === "privacy.json")) {
+    const report = JSON.parse(readFileSync(reportPath, "utf8"));
+    if (report.schema !== 1 || typeof report.target !== "string") continue;
+    if (groups.has(report.target)) throw new Error(`Duplicate privacy report for ${report.target}`);
+    groups.set(report.target, files(join(reportPath, "..")));
+  }
+  return Object.fromEntries(groups);
+}
+
 // Debian signatures are neither release assets nor updater payloads.
 const payload = (file) => /(?:\.dmg|\.exe|\.deb|\.AppImage|\.app\.tar\.gz|\.sig)$/.test(file) && !file.endsWith(".deb.sig");
 const digest = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
