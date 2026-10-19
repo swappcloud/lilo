@@ -9,7 +9,7 @@ const windowsPatterns = [
   /^scripts\/ci-platform-tests\.mjs$/,
   /^src-tauri\/windows\//,
   /(^|\/)windows\.rs$/,
-  /^scripts\/(build|toolchains|release-test)\.mjs$/,
+  /^scripts\/(build|toolchains|release-test|release-privacy)\.(mjs|test\.mjs)$/,
   /^crates\/lilo-core\/src\/plugins\/http\.rs$/,
 ];
 

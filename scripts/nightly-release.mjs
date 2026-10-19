@@ -20,15 +20,28 @@ export function nightlyPlan(current, sha, releases) {
   const versions = releases.filter((r) => numericVersion.test(r.tag_name));
   versions.sort((a, b) => compareVersions(b.tag_name, a.tag_name));
   const latest = versions[0];
-  if (latest?.target_commitish === sha) {
+  if (latest) {
     const names = new Set((latest.assets ?? []).map((a) => a.name));
     const complete = !latest.draft && names.has("latest.json") &&
       TARGETS.every((t) => t.files.every((f) => names.has(f.asset(latest.tag_name)))) &&
       UPDATE_TARGETS.every((t) => names.has(t.asset(latest.tag_name)) && names.has(t.asset(latest.tag_name) + ".sig"));
-    return { build: !complete, tag: latest.tag_name, reason: complete ? "main is already released" : "finish an incomplete release" };
+    if (complete && latest.target_commitish === sha) {
+      return { build: false, tag: latest.tag_name, targets: [], reason: "main is already released" };
+    }
+    if (!complete) {
+      const missing = TARGETS.filter((target) => {
+        const update = UPDATE_TARGETS.find((item) => item.target === target.target);
+        return target.files.some((file) => !names.has(file.asset(latest.tag_name))) ||
+          !names.has(update.asset(latest.tag_name)) || !names.has(`${update.asset(latest.tag_name)}.sig`);
+      });
+      // If only release metadata is missing (or this is a draft), rebuild all
+      // targets so the publisher can create a complete release in one pass.
+      const targets = latest.draft || missing.length === 0 ? TARGETS : missing;
+      return { build: true, tag: latest.tag_name, targets, reason: "finish an incomplete release" };
+    }
   }
   const tag = latest && compareVersions(latest.tag_name, current) >= 0 ? nextVersion(latest.tag_name, "patch") : current;
-  return { build: true, tag, reason: "main has unpublished changes" };
+  return { build: true, tag, targets: TARGETS, reason: "main has unpublished changes" };
 }
 
 /** Apply the selected version only to the disposable CI checkout. */
@@ -56,7 +69,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     if (!/^[\w.-]+\/[\w.-]+$/.test(repository ?? "")) throw new Error("Invalid repository");
     const releases = JSON.parse(execFileSync("gh", ["api", `repos/${repository}/releases?per_page=100`], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
     const plan = nightlyPlan(releaseVersion((file) => readFileSync(file, "utf8")), process.env.RELEASE_SHA, releases);
-    const matrix = TARGETS.map(({ platform, os, target, bundles }) => ({ platform, os, target, bundles }));
+    const matrix = plan.targets.map(({ platform, os, target, bundles }) => ({ platform, os, target, bundles }));
     console.log(`Nightly release: ${plan.reason}`);
     if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `build=${plan.build}\ntag=${plan.tag}\nmatrix=${JSON.stringify(matrix)}\n`, "utf8");
   }

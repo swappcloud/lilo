@@ -11,6 +11,8 @@ test("MSVC linker records a portable PDB name and GNU targets retain their linke
   assert.ok(flags.includes("link-arg=/PDBALTPATH:lilo.pdb"));
   assert.ok(flags.includes("--remap-path-prefix=C:/Users/Builder=/lilo-build/toolchain"));
   assert.ok(flags.includes("--remap-path-prefix=D:/project=/lilo-build/project"));
+  assert.ok(flags.includes(String.raw`--remap-path-prefix=\\?\C:\Users\Builder=/lilo-build/toolchain`));
+  assert.ok(flags.includes("--remap-path-prefix=//?/D:/project=/lilo-build/project"));
   const gnu = privacyBuildEnvironment({}, "home", "root", "win32", "x86_64-pc-windows-gnu");
   assert.ok(!gnu.CARGO_ENCODED_RUSTFLAGS.includes("PDBALTPATH"));
 });

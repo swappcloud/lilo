@@ -16,8 +16,14 @@ export function privacyBuildEnvironment(input, home = homedir(), root = process.
     : (env.RUSTFLAGS ?? "").split(/\s+/).filter(Boolean);
   flags.push(`--remap-path-prefix=${home}=/lilo-build/toolchain`, `--remap-path-prefix=${root}=/lilo-build/project`);
   if (platform === "win32") {
-    flags.push(`--remap-path-prefix=${home.replaceAll("\\", "/")}=/lilo-build/toolchain`,
-      `--remap-path-prefix=${root.replaceAll("\\", "/")}=/lilo-build/project`);
+    const windowsRemaps = [[home, "/lilo-build/toolchain"], [root, "/lilo-build/project"]]
+      .flatMap(([path, replacement]) => {
+        const forward = path.replaceAll("\\", "/");
+        const variants = [path, forward];
+        if (/^[A-Za-z]:[\\/]/.test(path)) variants.push(`\\\\?\\${path}`, `//?/${forward}`);
+        return [...new Set(variants)].map((variant) => `--remap-path-prefix=${variant}=${replacement}`);
+      });
+    flags.push(...windowsRemaps);
   }
   const msvc = target ? target.endsWith("-windows-msvc") : platform === "win32" && !input.RUSTUP_TOOLCHAIN?.includes("-windows-gnu");
   // Rust source remapping does not change the linker's embedded PDB location.
