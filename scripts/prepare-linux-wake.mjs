@@ -11,14 +11,17 @@ export function dependencyPaths(output) {
     .filter(path => !/\/(?:libc\.so|libm\.so|ld-linux|ld64)/.test(path)))];
 }
 
-export function licensePackageNames(paths, findOwners) {
+export function licensePackageNames(paths, findOwners, resolvePath = (path) => path) {
   const packages = new Set(["pocketsphinx-en-us", "pulseaudio-utils"]);
   for (const path of paths) {
     // Debian package records may retain /lib while usrmerge resolves it to /usr/lib.
-    const alternate = path.startsWith("/usr/lib/") || path.startsWith("/usr/lib64/")
-      ? path.slice(4) : path.startsWith("/lib/") || path.startsWith("/lib64/") ? `/usr${path}` : path;
+    const candidates = new Set([path, resolvePath(path)].flatMap((candidate) => {
+      const alternate = candidate.startsWith("/usr/lib/") || candidate.startsWith("/usr/lib64/")
+        ? candidate.slice(4) : candidate.startsWith("/lib/") || candidate.startsWith("/lib64/") ? `/usr${candidate}` : candidate;
+      return [candidate, alternate];
+    }));
     let ownership, lastError;
-    for (const candidate of new Set([path, alternate])) {
+    for (const candidate of candidates) {
       try {
         ownership = findOwners(candidate);
         break;
@@ -61,7 +64,7 @@ export function prepareLinuxWake(root, { model = "/usr/share/pocketsphinx/model/
   }
   // Keep package copyright files with redistributed native libraries and models.
   const packages = licensePackageNames(all, (path) =>
-    execFileSync("dpkg-query", ["-S", path], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
+    execFileSync("dpkg-query", ["-S", path], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }), realpathSync);
   for (const name of packages) {
     const notice = `/usr/share/doc/${name}/copyright`;
     if (!existsSync(notice)) throw new Error(`Missing Linux wake redistribution notice: ${name}`);

@@ -13,6 +13,14 @@ test("Linux wake packaging includes native dependencies without bundling the hos
   assert.throws(() => dependencyPaths("libpocketsphinx.so.3 => not found"), /missing/);
 });
 
+test("Linux wake packaging resolves alternatives symlinks before looking up licenses", () => {
+  const packages = licensePackageNames(["/usr/lib/libblas.so.3"], (path) => {
+    if (path === "/usr/lib/blas/libblas.so.3.10.0") return "libblas3:amd64: /usr/lib/blas/libblas.so.3.10.0";
+    throw new Error("package owner not found");
+  }, () => "/usr/lib/blas/libblas.so.3.10.0");
+  assert.ok(packages.has("libblas3"));
+});
+
 test("Linux wake packaging finds package owners across merged usr library paths", () => {
   const packages = licensePackageNames(["/usr/lib/libgcc_s.so.1", "/lib/libdbus-1.so.3"], (path) => {
     if (path === "/lib/libgcc_s.so.1") return "libgcc-s1:amd64: /lib/libgcc_s.so.1";
