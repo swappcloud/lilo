@@ -1,12 +1,17 @@
 //! Daemon wake lifecycle; provider and account selection stay in Session.
-use lilo_core::wake::{Event, Options, WakeListener};
+#[cfg(target_os = "linux")]
+use lilo_core::wake::Options;
+use lilo_core::wake::{Event, WakeListener};
 use std::path::Path;
-use std::sync::mpsc::{self, Receiver};
+#[cfg(target_os = "linux")]
+use std::sync::mpsc;
+use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 
 pub struct WakeController {
     listener: Option<WakeListener>,
     events: Option<Receiver<Event>>,
+    #[cfg(target_os = "linux")]
     phrase: String,
     state: &'static str,
     retry_after: Option<Instant>,
@@ -18,6 +23,7 @@ impl WakeController {
         Self {
             listener: None,
             events: None,
+            #[cfg(target_os = "linux")]
             phrase: String::new(),
             state: "off",
             retry_after: None,

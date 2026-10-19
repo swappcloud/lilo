@@ -369,7 +369,6 @@ fn filter_new_events(last_sequence: &mut u64, mut events: Vec<VoiceEvent>) -> Ve
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Read;
     use std::thread;
 
     fn event(sequence: u64) -> VoiceEvent {

@@ -757,7 +757,7 @@ mod tests {
     async fn media_commands_are_provided_by_the_shared_media_service() {
         let dir = temp_dir("media");
         let config = Config::parse("locales = [\"pt\"]\n").unwrap();
-        let mut session = Session::start(&config, &dir).await.unwrap();
+        let session = Session::start(&config, &dir).await.unwrap();
 
         let registry = session.plugins.read().await;
         assert!(registry.handles("media_play"));

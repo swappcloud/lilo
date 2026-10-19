@@ -35,8 +35,7 @@ pub fn default_marketplace_url() -> String {
 pub const REPO_MARKETPLACE_URL: &str =
     "https://raw.githubusercontent.com/swappcloud/lilo/main/examples/plugins";
 
-const MISCONFIGURED_MARKETPLACE_URL: &str =
-    "https://raw.githubusercontent.com/lilo/plugins/main";
+const MISCONFIGURED_MARKETPLACE_URL: &str = "https://raw.githubusercontent.com/lilo/plugins/main";
 
 /// Development uses only the workspace examples, even with a saved URL.
 /// Packaged apps use the configured source, or the repository followed by the
