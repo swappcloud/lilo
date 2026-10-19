@@ -1705,7 +1705,7 @@ mod tests {
 
     #[tokio::test]
     async fn author_guide_notebook_runs_in_the_embedded_engine() {
-        let guide = include_str!("../../../../docs/plugin-authoring.md");
+        let guide = include_str!("../../../../docs/plugin-authoring.md").replace("\r\n", "\n");
         let script = guide
             .split_once("```js\n")
             .unwrap()
