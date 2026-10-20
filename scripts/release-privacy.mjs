@@ -29,6 +29,19 @@ export function privacyBuildEnvironment(input, home = homedir(), root = process.
   // MSVC stores Rust debug paths in external PDBs, outside rustc's path remap.
   // PDBs are not release artifacts, so don't generate debug info for the app.
   if (msvc) flags.push("-C", "strip=debuginfo", "-C", "link-arg=/PDBALTPATH:lilo.pdb");
+  if (platform === "win32" && msvc) {
+    // cc-rs compiles QuickJS from absolute paths under Cargo's OUT_DIR.
+    // Rust remaps and PDB stripping do not rewrite C's __FILE__ literals.
+    env.CC_SHELL_ESCAPED_FLAGS = "1";
+    // MSVC uses the first matching prefix; the workspace can be under home.
+    const mappings = [[root, "/lilo-build/project"], [home, "/lilo-build/toolchain"]]
+      .map(([source, destination]) => `"/pathmap:${source}=${destination}"`);
+    // rquickjs-sys replaces CFLAGS on Windows. cc-rs also reads target-specific
+    // flags, which survive that override and retain QuickJS's required flags.
+    const nativeTarget = target || `${process.arch === "arm64" ? "aarch64" : "x86_64"}-pc-windows-msvc`;
+    const flagKey = `CFLAGS_${nativeTarget.replaceAll("-", "_")}`;
+    env[flagKey] = [env[flagKey], "/experimental:deterministic", ...mappings].filter(Boolean).join(" ");
+  }
   env.CARGO_ENCODED_RUSTFLAGS = flags.join("\x1f");
   delete env.RUSTFLAGS;
   // Rust flags do not cover native C dependencies compiled by cc-rs.
