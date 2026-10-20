@@ -6,6 +6,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "nod
 import { join } from "node:path";
 import { privacyBuildEnvironment, assertPrivateDataAbsent, discoverTargetArtifacts, verifyPrivacyReport } from "./release-privacy.mjs";
 
+const msvcHost = process.platform === "win32" && execFileSync("rustc", ["-vV"], { encoding: "utf8" }).includes("host: x86_64-pc-windows-msvc");
+
 test("MSVC linker records a portable PDB name and GNU targets retain their linker flags", () => {
   const env = privacyBuildEnvironment({}, "C:\\Users\\Builder", "D:\\project", "win32", "x86_64-pc-windows-msvc");
   const flags = env.CARGO_ENCODED_RUSTFLAGS.split("\x1f");
@@ -20,7 +22,7 @@ test("MSVC linker records a portable PDB name and GNU targets retain their linke
   assert.ok(!gnu.CARGO_ENCODED_RUSTFLAGS.includes("PDBALTPATH"));
 });
 
-test("Windows release binary contains no local PDB path", { skip: process.platform !== "win32" }, () => {
+test("Windows release binary contains no local PDB path", { skip: !msvcHost }, () => {
   mkdirSync(".tmp", { recursive: true });
   const directory = mkdtempSync(join(process.cwd(), ".tmp", "linker-privacy-"));
   try {
@@ -40,8 +42,40 @@ test("Linux native compiler flags preserve user flags and anonymize source paths
   const env = privacyBuildEnvironment({ CFLAGS: "-O2" }, "/home/Build User", "/home/Build User/project", "linux");
   assert.equal(env.CC_SHELL_ESCAPED_FLAGS, "1");
   assert.equal(env.CFLAGS, "-O2 '-ffile-prefix-map=/home/Build User=/lilo-build/toolchain' '-ffile-prefix-map=/home/Build User/project=/lilo-build/project'");
-  for (const platform of ["darwin", "win32"]) {
-    assert.equal(privacyBuildEnvironment({ CFLAGS: "existing" }, "home", "root", platform).CFLAGS, "existing");
+  assert.equal(privacyBuildEnvironment({ CFLAGS: "existing" }, "home", "root", "darwin").CFLAGS, "existing");
+});
+
+test("Windows native compiler remaps source literals while preserving user flags", () => {
+  const env = privacyBuildEnvironment({ CFLAGS: "/O2", CFLAGS_x86_64_pc_windows_msvc: "/W3" }, "C:\\Users\\Build User", "D:\\Build Root", "win32", "x86_64-pc-windows-msvc");
+  assert.equal(env.CC_SHELL_ESCAPED_FLAGS, "1");
+  assert.equal(env.CFLAGS, "/O2");
+  assert.equal(env.CFLAGS_x86_64_pc_windows_msvc, '/W3 /experimental:deterministic "/pathmap:D:\\Build Root=/lilo-build/project" "/pathmap:C:\\Users\\Build User=/lilo-build/toolchain"');
+  const gnu = privacyBuildEnvironment({ CFLAGS: "existing" }, "home", "root", "win32", "x86_64-pc-windows-gnu");
+  assert.equal(gnu.CFLAGS, "existing");
+});
+
+test("MSVC native source literals pass the release privacy gate", { skip: !msvcHost && !process.env.LILO_MSVC_CL }, () => {
+  mkdirSync(".tmp", { recursive: true });
+  const directory = mkdtempSync(join(process.cwd(), ".tmp", "native privacy "));
+  try {
+    const vswhere = join(process.env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)", "Microsoft Visual Studio", "Installer", "vswhere.exe");
+    const compiler = process.env.LILO_MSVC_CL || execFileSync(vswhere, ["-latest", "-products", "*", "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "-find", "VC/Tools/MSVC/*/bin/Hostx64/x64/cl.exe"], { encoding: "utf8" }).trim().split(/\r?\n/)[0];
+    assert.ok(compiler, "MSVC compiler is required for the native release privacy regression");
+    const source = join(directory, "source.c");
+    const object = join(directory, "fixture.obj");
+    writeFileSync(source, '#define WIDEN_IMPL(x) L##x\n#define WIDEN(x) WIDEN_IMPL(x)\nconst char *fixture(void) { return __FILE__; }\nconst unsigned short *wide_fixture(void) { return WIDEN(__FILE__); }\n');
+    // Match cc-rs: an absolute source path, with no Rust involved.
+    execFileSync(compiler, ["/nologo", "/c", source, `/Fo${object}`]);
+    assert.throws(() => assertPrivateDataAbsent(readFileSync(object), [directory]), /machine path/);
+    const env = privacyBuildEnvironment({}, undefined, directory, "win32", "x86_64-pc-windows-msvc");
+    const mappings = [...env.CFLAGS_x86_64_pc_windows_msvc.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+    execFileSync(compiler, ["/nologo", "/c", "/experimental:deterministic", ...mappings, source, `/Fo${object}`]);
+    const bytes = readFileSync(object);
+    assertPrivateDataAbsent(bytes, [directory]);
+    assert.ok(bytes.includes(Buffer.from("/lilo-build/project")));
+    assert.ok(bytes.includes(Buffer.from("/lilo-build/project", "utf16le")));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
