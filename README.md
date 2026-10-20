@@ -1,6 +1,6 @@
 # LILO — Listen In. Listen Out.
 
-[![CI](https://github.com/swappcloud/lilo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/swappcloud/lilo/actions/workflows/ci.yml) [![Release](https://github.com/swappcloud/lilo/actions/workflows/release-build.yml/badge.svg?branch=main)](https://github.com/swappcloud/lilo/actions/workflows/release-build.yml)
+[![Release](https://github.com/swappcloud/lilo/actions/workflows/release-build.yml/badge.svg?branch=main)](https://github.com/swappcloud/lilo/actions/workflows/release-build.yml)
 
 <p align="center">
   <img src="docs/media/lilo.gif" width="300" alt="LILO wakes up, looks around, listens and answers">

@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  handleLocalUtterance,
   isTauri,
+  onLocalVoiceTranscript,
   onWakeBlocked,
   onWakeWord,
   setWakeWatch,
@@ -11,6 +13,8 @@ import { onSatelliteActivate } from "../../providers/chatgpt/gateway";
 import { effectiveGreeting, usePreferencesStore } from "../../store/preferencesStore";
 import { useSessionStore } from "../../store/sessionStore";
 import { useWakeStore } from "../../store/wakeStore";
+import { LocalVoiceController } from "../../store/localVoice";
+import { usePluginsStore } from "../../store/pluginsStore";
 
 interface SpeechRecognitionAlternativeLike {
   transcript: string;
@@ -88,6 +92,7 @@ export function useWakeWord(): void {
   const phrase = usePreferencesStore((s) => s.wakePhrase);
   const greeting = usePreferencesStore(effectiveGreeting);
   const connectionState = useSessionStore((s) => s.connectionState);
+  const plugins = usePluginsStore((s) => s.plugins);
 
   const greetingRef = useRef(greeting);
   greetingRef.current = greeting;
@@ -97,6 +102,24 @@ export function useWakeWord(): void {
 
   const native = useNativeEngine();
   const idle = IDLE_STATES.has(connectionState);
+  const localVoiceRef = useRef<LocalVoiceController | null>(null);
+  const [localTranscriptReady, setLocalTranscriptReady] = useState(!native);
+  if (!localVoiceRef.current) {
+    localVoiceRef.current = new LocalVoiceController(
+      async (transcript) => {
+        const session = useSessionStore.getState();
+        if (!usePreferencesStore.getState().wakeWord || !IDLE_STATES.has(session.connectionState)) return;
+        try {
+          await session.initCommandRouting();
+          if (!usePreferencesStore.getState().wakeWord || !IDLE_STATES.has(useSessionStore.getState().connectionState)) return;
+          await handleLocalUtterance(transcript);
+        } catch (error) {
+          logError("local-voice", error);
+        }
+      },
+      () => usePreferencesStore.getState().wakeWord && IDLE_STATES.has(useSessionStore.getState().connectionState),
+    );
+  }
 
   const trigger = useCallback(async () => {
     const store = useSessionStore.getState();
@@ -120,7 +143,7 @@ export function useWakeWord(): void {
   // --- native engine (macOS) ---------------------------------------------
   useEffect(() => {
     if (!native) return;
-    const active = enabled && idle;
+    const active = enabled && idle && localTranscriptReady;
     log(
       "wake",
       `native engine ${active ? "start" : "stop"} (phrase="${phraseRef.current}", enabled=${enabled}, idle=${idle})`,
@@ -131,7 +154,38 @@ export function useWakeWord(): void {
     // No per-change cleanup here: calling setWakeWatch(false) on every
     // dependency change races with the next setWakeWatch(true), which can leave
     // the listener disabled after a call ends. Disable only on unmount.
-  }, [native, enabled, idle, phrase]);
+  }, [native, enabled, idle, phrase, plugins, localTranscriptReady]);
+
+  // Local command speech shares native capture and only runs while the
+  // provider is idle. Listener setup is race-safe across unmounts.
+  useEffect(() => {
+    if (!native) return;
+    let disposed = false;
+    let off: (() => void) | undefined;
+    setLocalTranscriptReady(false);
+    void onLocalVoiceTranscript((transcript) => {
+      const controller = localVoiceRef.current;
+      if (!usePreferencesStore.getState().wakeWord || !IDLE_STATES.has(useSessionStore.getState().connectionState)) {
+        controller?.cancel();
+        return;
+      }
+      controller?.push(transcript);
+    }).then((unlisten) => {
+      if (disposed) unlisten();
+      else {
+        off = unlisten;
+        setLocalTranscriptReady(true);
+      }
+    }).catch((error) => logError("local-voice", error));
+    return () => {
+      disposed = true;
+      off?.();
+      setLocalTranscriptReady(false);
+      localVoiceRef.current?.cancel();
+    };
+  }, [native, enabled, connectionState]);
+
+  useEffect(() => () => localVoiceRef.current?.cancel(), []);
 
   useEffect(() => {
     if (!native) return;
@@ -193,6 +247,7 @@ export function useWakeWord(): void {
     let stopped = false;
     let recognition: SpeechRecognitionLike | null = null;
     let restartTimer: ReturnType<typeof setTimeout> | null = null;
+    let browserTurn = 0;
 
     const fire = () => {
       if (stopped) return;
@@ -222,7 +277,17 @@ export function useWakeWord(): void {
         const target = normalize(phraseRef.current);
         if (!target) return;
         for (let i = event.resultIndex; i < event.results.length; i += 1) {
-          const text = normalize(event.results[i]?.[0]?.transcript ?? "");
+          const result = event.results[i];
+          const raw = result?.[0]?.transcript ?? "";
+          const text = normalize(raw);
+          if (result?.isFinal && text && !text.includes(target)) {
+            localVoiceRef.current?.push({
+              version: 1,
+              turnId: `browser-${Date.now()}-${++browserTurn}`,
+              text: raw,
+              isFinal: true,
+            });
+          }
           if (text.includes(target)) {
             fire();
             return;

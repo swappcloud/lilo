@@ -13,6 +13,8 @@ pub use linux::WakeListener;
 #[derive(Clone, Debug)]
 pub struct Options {
     pub phrase: String,
+    /// Finite local command phrases supplied by the command registry.
+    pub command_phrases: Vec<String>,
     pub state_dir: PathBuf,
     pub model_dir: PathBuf,
     pub library_dir: Option<PathBuf>,
@@ -23,6 +25,7 @@ impl Options {
     pub fn new(phrase: &str, state_dir: PathBuf) -> Self {
         Self {
             phrase: phrase.trim().to_lowercase(),
+            command_phrases: Vec::new(),
             state_dir,
             model_dir: PathBuf::from("/usr/share/pocketsphinx/model/en-us"),
             library_dir: None,
@@ -41,6 +44,11 @@ impl Options {
         {
             return Err("The Linux wake phrase must contain supported dictionary words.".into());
         }
+        if self.command_phrases.len() > 256
+            || self.command_phrases.iter().map(String::len).sum::<usize>() > 16_384
+        {
+            return Err("The local voice command catalog is too large.".into());
+        }
         Ok(())
     }
 }
@@ -49,6 +57,8 @@ impl Options {
 pub enum Event {
     Ready,
     Detected,
+    /// A catalog phrase recognized locally, without starting provider voice.
+    LocalCommand(String),
     Blocked {
         reason: &'static str,
         detail: &'static str,

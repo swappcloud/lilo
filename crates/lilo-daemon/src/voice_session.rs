@@ -47,20 +47,32 @@ fn session_context_payload(status: &VoiceStatus) -> serde_json::Value {
 impl Session {
     pub async fn poll_wake(&mut self) {
         let provider = self.settings.get().provider_id;
-        let idle = self.voice.as_ref().is_some_and(|voice| {
-            voice.providers().contains(&provider)
-                && matches!(
+        let idle = self.voice.as_ref().map_or(true, |voice| {
+            !voice.providers().contains(&provider)
+                || matches!(
                     voice.status().state,
                     crate::voice::VoiceState::Idle | crate::voice::VoiceState::Error
                 )
         });
         let account = self.accounts.pick(&provider, None);
-        if self.wake.update(
+        let command_phrases = self.router.registry().local_voice_phrases("en");
+        let wake_detected = self.wake.update(
             self.device.wake_word,
-            idle && account.is_some(),
+            idle,
             &self.device.wake_phrase,
+            &command_phrases,
+            account.is_some(),
             &self.data_dir,
-        ) {
+        );
+        for (index, text) in self.wake.take_local_commands().into_iter().enumerate() {
+            let id = format!("local-{}-{}", now_ms(), index);
+            for entry in self.route_local(&text, &id).await {
+                if let Some(summary) = entry.summary.as_deref().or(entry.error.as_deref()) {
+                    log::info(format!("local voice {}: {summary}", entry.command));
+                }
+            }
+        }
+        if wake_detected {
             if let Some(account) = account {
                 if self
                     .start_voice(&provider, &account.email, None)

@@ -45,3 +45,24 @@ pub const EVENT_NAME: &str = "wake-word";
 /// The payload is OS-independent on purpose: every platform's engine reports
 /// its own failures, and the UI maps a reason to an action.
 pub const BLOCKED_EVENT: &str = "wake-blocked";
+
+/// Versioned transcripts from local engines; no provider connection is involved.
+pub const TRANSCRIPT_EVENT: &str = "local-voice-transcript";
+pub fn emit_transcript(app: &tauri::AppHandle, text: String, turn: String, final_result: bool) {
+    use tauri::Emitter;
+    let event = lilo_core::commands::local::Transcript::new(text, turn, final_result);
+    if event.valid() {
+        let _ = app.emit(TRANSCRIPT_EVENT, event);
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+pub fn command_phrases(app: &tauri::AppHandle) -> Vec<String> {
+    use tauri::Manager;
+    app.state::<crate::AppState>()
+        .router
+        .lock()
+        .expect("router poisoned")
+        .registry()
+        .local_voice_phrases("en")
+}

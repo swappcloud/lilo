@@ -208,6 +208,7 @@ fn accept_and_read(listener: std::os::unix::net::UnixListener, app: AppHandle) {
     }
 
     let mut reader = BufReader::new(stream);
+    let mut local_turn = uuid::Uuid::new_v4().to_string();
     loop {
         let mut line = String::new();
         match reader.read_line(&mut line) {
@@ -244,6 +245,17 @@ fn accept_and_read(listener: std::os::unix::net::UnixListener, app: AppHandle) {
                     let _ = app.emit(BLOCKED_EVENT, serde_json::Value::Null);
                 }
                 "" => {}
+                other if other.starts_with("PART ") || other.starts_with("HEARD ") => {
+                    let final_result = other.starts_with("HEARD ");
+                    let text = other
+                        .split_once(' ')
+                        .map(|(_, text)| text)
+                        .unwrap_or_default();
+                    super::emit_transcript(&app, text.into(), local_turn.clone(), final_result);
+                    if final_result {
+                        local_turn = uuid::Uuid::new_v4().to_string();
+                    }
+                }
                 other => {
                     if let Some(rest) = other.strip_prefix("BLOCKED ") {
                         // `<reason>: <detail>` — the reason is a stable key the

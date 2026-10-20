@@ -133,6 +133,15 @@ export const handleUtterance = (
     isFinal,
   });
 
+export interface LocalVoiceTranscript {
+  version: 1;
+  turnId: string;
+  text: string;
+  isFinal: boolean;
+}
+export const handleLocalUtterance = (transcript: LocalVoiceTranscript) =>
+  call<CommandOutcome[]>("handle_local_utterance", { transcript });
+
 export const listCommands = (locale?: string) => call<CommandManifestEntry[]>("list_commands", { locale });
 /** Appended to the hidden persona so the model knows LILO already acted. */
 export const commandPromptLine = (hasFollowUp: boolean) =>
@@ -359,4 +368,12 @@ export const openExternal = (url: string) => call<void>("open_external", { url }
 export async function onWakeWord(cb: () => void): Promise<UnlistenFn> {
   if (!isTauri()) return () => {};
   return listen("wake-word", () => cb());
+}
+
+/** Partial and final speech recognized by the native wake listener. */
+export async function onLocalVoiceTranscript(
+  cb: (transcript: unknown) => void,
+): Promise<UnlistenFn> {
+  if (!isTauri()) return () => {};
+  return listen<unknown>("local-voice-transcript", (event) => cb(event.payload));
 }
