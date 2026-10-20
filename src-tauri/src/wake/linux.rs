@@ -48,6 +48,7 @@ impl WakeWatcher {
             .app_data_dir()
             .map_err(|_| "Linux wake storage is unavailable.")?;
         let mut options = Options::new(phrase, data.join("wake"));
+        options.command_phrases = super::command_phrases(app);
         if let Ok(resources) = app.path().resource_dir() {
             let root = resources.join("wake/linux");
             if root.join("model/en-us").is_dir() {
@@ -76,6 +77,9 @@ impl WakeWatcher {
                     }
                     Event::Detected => {
                         let _ = app.emit(EVENT_NAME, ());
+                    }
+                    Event::LocalCommand(text) => {
+                        super::emit_transcript(&app, text, uuid::Uuid::new_v4().to_string(), true);
                     }
                     Event::Blocked { reason, detail } => {
                         let _ = app.emit(

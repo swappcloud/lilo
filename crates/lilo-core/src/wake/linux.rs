@@ -62,7 +62,9 @@ type Process = unsafe extern "C" fn(*mut c_void, *const i16, usize, i32, i32) ->
 type Hypothesis = unsafe extern "C" fn(*mut c_void, *mut i32) -> *const c_char;
 
 struct Decoder {
-    keyword: String,
+    wake_phrase: String,
+    command_phrases: BTreeSet<String>,
+    detected_text: Option<String>,
     pointer: *mut c_void,
     config: *mut c_void,
     free: Free,
@@ -71,13 +73,25 @@ struct Decoder {
     end: Utterance,
     process: Process,
     hypothesis: Hypothesis,
-    dictionary: PathBuf,
+    _temporary_files: TemporaryFiles,
     _pocket: Library,
     _base: Library,
 }
 
-fn dictionary(phrase: &str, source: &Path) -> Result<String, String> {
-    let words: BTreeSet<_> = phrase.split_whitespace().collect();
+struct TemporaryFiles(Vec<PathBuf>);
+impl Drop for TemporaryFiles {
+    fn drop(&mut self) {
+        for path in &self.0 {
+            let _ = fs::remove_file(path);
+        }
+    }
+}
+
+fn dictionary(phrases: &[String], source: &Path) -> Result<(String, Vec<String>), String> {
+    let words: BTreeSet<_> = phrases
+        .iter()
+        .flat_map(|phrase| phrase.split_whitespace())
+        .collect();
     let mut found = BTreeMap::<String, Vec<String>>::new();
     let reader =
         BufReader::new(File::open(source).map_err(|_| "Linux wake dictionary is unavailable.")?);
@@ -105,12 +119,73 @@ fn dictionary(phrase: &str, source: &Path) -> Result<String, String> {
             found.insert(word.into(), vec![format!("{word} {phones}")]);
         }
     }
-    if words.iter().any(|word| !found.contains_key(*word)) {
+    let supported = phrases
+        .iter()
+        .filter(|phrase| {
+            phrase
+                .split_whitespace()
+                .all(|word| found.contains_key(word))
+        })
+        .cloned()
+        .collect();
+    Ok((
+        found.into_values().flatten().collect::<Vec<_>>().join("\n") + "\n",
+        supported,
+    ))
+}
+
+fn valid_catalog_phrase(phrase: &str) -> bool {
+    !phrase.is_empty()
+        && phrase.len() <= 80
+        && phrase.split_whitespace().count() <= 16
+        && phrase
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b == b' ' || b == b'\'')
+}
+
+fn prepare_catalog(
+    options: &Options,
+    source: &Path,
+) -> Result<(String, String, Vec<String>), String> {
+    if !valid_catalog_phrase(&options.phrase) {
+        return Err("The Linux wake phrase must contain supported dictionary words.".into());
+    }
+    if options.command_phrases.len() > 256
+        || options
+            .command_phrases
+            .iter()
+            .map(String::len)
+            .sum::<usize>()
+            > 16_384
+    {
+        return Err("The local voice command catalog is too large.".into());
+    }
+    let mut phrases = vec![options.phrase.clone()];
+    let mut commands = BTreeSet::new();
+    for phrase in &options.command_phrases {
+        let normalized = phrase.trim().to_lowercase();
+        if valid_catalog_phrase(&normalized) && normalized != options.phrase {
+            commands.insert(normalized);
+        }
+    }
+    phrases.extend(commands.iter().cloned());
+    let (dictionary, supported) = dictionary(&phrases, source)?;
+    if !supported.iter().any(|phrase| phrase == &options.phrase) {
         return Err(
             "The wake phrase contains a word absent from the Linux model dictionary.".into(),
         );
     }
-    Ok(found.into_values().flatten().collect::<Vec<_>>().join("\n") + "\n")
+    let supported_commands: Vec<_> = supported
+        .into_iter()
+        .filter(|phrase| phrase != &options.phrase)
+        .collect();
+    let kws = std::iter::once(options.phrase.clone())
+        .chain(supported_commands.iter().cloned())
+        .map(|phrase| format!("{phrase} /1e-10/"))
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n";
+    Ok((dictionary, kws, supported_commands))
 }
 
 impl Decoder {
@@ -132,16 +207,18 @@ impl Decoder {
         let end: Utterance = unsafe { pocket.symbol(b"ps_end_utt\0")? };
         let process: Process = unsafe { pocket.symbol(b"ps_process_raw\0")? };
         let hypothesis: Hypothesis = unsafe { pocket.symbol(b"ps_get_hyp\0")? };
-        let contents = dictionary(
-            &options.phrase,
-            &options.model_dir.join("cmudict-en-us.dict"),
-        )?;
+        let (contents, kws_contents, supported_commands) =
+            prepare_catalog(options, &options.model_dir.join("cmudict-en-us.dict"))?;
         fs::create_dir_all(&options.state_dir).map_err(|_| "Linux wake state is unavailable.")?;
         fs::set_permissions(&options.state_dir, fs::Permissions::from_mode(0o700))
             .map_err(|_| "Linux wake state permissions failed.")?;
         let dictionary = options
             .state_dir
             .join(format!("{}.dict", uuid::Uuid::new_v4()));
+        let mut temporary_files = TemporaryFiles(vec![dictionary.clone()]);
+        let kws = options
+            .state_dir
+            .join(format!("{}.kws", uuid::Uuid::new_v4()));
         use std::os::unix::fs::OpenOptionsExt;
         let mut file = fs::OpenOptions::new()
             .write(true)
@@ -153,6 +230,17 @@ impl Decoder {
         file.write_all(contents.as_bytes())
             .map_err(|_| "Linux wake dictionary could not be prepared.")?;
         drop(file);
+        temporary_files.0.push(kws.clone());
+        let mut kws_file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&kws)
+            .map_err(|_| "Linux wake catalog could not be prepared.")?;
+        kws_file
+            .write_all(kws_contents.as_bytes())
+            .map_err(|_| "Linux wake catalog could not be prepared.")?;
+        drop(kws_file);
         let values = [
             "lilo-wake".into(),
             "-hmm".into(),
@@ -163,8 +251,8 @@ impl Decoder {
                 .into_owned(),
             "-dict".into(),
             dictionary.to_string_lossy().into_owned(),
-            "-keyphrase".into(),
-            options.phrase.clone(),
+            "-kws".into(),
+            kws.to_string_lossy().into_owned(),
             "-samprate".into(),
             "16000".into(),
             "-kws_threshold".into(),
@@ -192,7 +280,6 @@ impl Decoder {
             )
         };
         if config.is_null() {
-            let _ = fs::remove_file(&dictionary);
             return Err("Linux wake configuration failed.".into());
         }
         let pointer = unsafe { init(config) };
@@ -200,11 +287,12 @@ impl Decoder {
             unsafe {
                 config_free(config);
             }
-            let _ = fs::remove_file(&dictionary);
             return Err("Linux wake model could not be initialized.".into());
         }
         let decoder = Self {
-            keyword: options.phrase.clone(),
+            wake_phrase: options.phrase.clone(),
+            command_phrases: supported_commands.into_iter().collect(),
+            detected_text: None,
             pointer,
             config,
             free,
@@ -213,7 +301,7 @@ impl Decoder {
             end,
             process,
             hypothesis,
-            dictionary,
+            _temporary_files: temporary_files,
             _pocket: pocket,
             _base: base,
         };
@@ -223,18 +311,30 @@ impl Decoder {
         Ok(decoder)
     }
     fn feed(&mut self, samples: &[i16]) -> Result<bool, String> {
+        self.detected_text = None;
         // The decoder lives on one worker; PCM is mono signed 16-bit at 16 kHz.
         if unsafe { (self.process)(self.pointer, samples.as_ptr(), samples.len(), 0, 0) } < 0 {
             return Err("Linux wake decoding failed.".into());
         }
         let text = unsafe { (self.hypothesis)(self.pointer, std::ptr::null_mut()) };
-        if text.is_null() || unsafe { CStr::from_ptr(text) }.to_bytes() != self.keyword.as_bytes() {
+        if text.is_null() {
             return Ok(false);
         }
+        let hypothesis = unsafe { CStr::from_ptr(text) }
+            .to_string_lossy()
+            .trim()
+            .to_lowercase();
+        if hypothesis != self.wake_phrase && !self.command_phrases.contains(&hypothesis) {
+            return Ok(false);
+        }
+        self.detected_text = Some(hypothesis);
         if unsafe { (self.end)(self.pointer) } < 0 || unsafe { (self.begin)(self.pointer) } < 0 {
             return Err("Linux wake listener could not rearm.".into());
         }
         Ok(true)
+    }
+    fn detected_text(&self) -> Option<&str> {
+        self.detected_text.as_deref()
     }
 }
 impl Drop for Decoder {
@@ -244,7 +344,6 @@ impl Drop for Decoder {
             (self.free)(self.pointer);
             (self.config_free)(self.config);
         }
-        let _ = fs::remove_file(&self.dictionary);
     }
 }
 
@@ -375,7 +474,14 @@ fn listen(
             && last_detection.map_or(true, |last| last.elapsed() >= Duration::from_secs(2))
         {
             last_detection = Some(Instant::now());
-            let _ = events.try_send(Event::Detected);
+            if let Some(text) = decoder.detected_text() {
+                let event = if text == options.phrase {
+                    Event::Detected
+                } else {
+                    Event::LocalCommand(text.to_owned())
+                };
+                let _ = events.try_send(event);
+            }
         }
     }
     Ok(())
@@ -386,8 +492,9 @@ mod tests {
     use super::*;
     #[test]
     fn keyword_dictionary_is_scoped_and_unknown_words_fail() {
-        let root =
-            std::env::temp_dir().join(format!("lilo-wake-dictionary-{}", uuid::Uuid::new_v4()));
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../.tmp")
+            .join(format!("lilo-wake-dictionary-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(&root).unwrap();
         let source = root.join("dictionary");
         fs::write(
@@ -395,11 +502,51 @@ mod tests {
             "hello HH AH L OW\nhello(2) HH EH L OW\nother AH DH ER\n",
         )
         .unwrap();
-        let result = dictionary("hello lilo", &source).unwrap();
+        let (result, supported) = dictionary(&["hello lilo".into()], &source).unwrap();
         assert!(result.contains("hello(2)"));
         assert!(result.contains("lilo L IY L OW"));
         assert!(!result.contains("other"));
-        assert!(dictionary("unknown lilo", &source).is_err());
+        assert_eq!(supported, vec!["hello lilo".to_string()]);
+        let (_, supported) = dictionary(&["unknown lilo".into(), "lilo".into()], &source).unwrap();
+        assert_eq!(supported, vec!["lilo".to_string()]);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn catalog_skips_commands_missing_dictionary_words_but_rejects_missing_wake_words() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../.tmp")
+            .join(format!("lilo-wake-catalog-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let source = root.join("dictionary");
+        fs::write(
+            &source,
+            "lilo L IY L OW\nstop S T AA P\nmusic M Y UW Z IH K\n",
+        )
+        .unwrap();
+        let mut options = Options::new("lilo", root.clone());
+        options.command_phrases = vec!["stop music".into(), "play unsupportedword".into()];
+        let (_, kws, supported) = prepare_catalog(&options, &source).unwrap();
+        assert_eq!(supported, vec!["stop music".to_string()]);
+        assert!(kws.contains("lilo /1e-10/"));
+        assert!(kws.contains("stop music /1e-10/"));
+        assert!(!kws.contains("unsupportedword"));
+
+        options.phrase = "unknown wake".into();
+        assert!(prepare_catalog(&options, &source).is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn temporary_catalog_files_are_removed_on_drop() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../.tmp")
+            .join(format!("lilo-wake-cleanup-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("catalog.kws");
+        fs::write(&path, "lilo /1e-10/\n").unwrap();
+        let files = TemporaryFiles(vec![path.clone()]);
+        assert!(path.exists());
+        drop(files);
+        assert!(!path.exists());
         fs::remove_dir_all(root).unwrap();
     }
     #[test]

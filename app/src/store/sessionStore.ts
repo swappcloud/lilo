@@ -84,6 +84,7 @@ let lastAssistantCaptionAt = 0;
 const DUCK_RELEASE_MS = 2_000;
 /** Command events are app-wide; subscribe once for the process lifetime. */
 let commandListenersReady = false;
+let commandListenersPromise: Promise<void> | null = null;
 /** "Running …" notes waiting to see whether their result beats them. */
 const pendingNotes = new PendingNotes((text) =>
   useSessionStore.getState().sendText(text, { hidden: true }),
@@ -448,6 +449,8 @@ export interface SessionStore {
   /** Re-reads name/email from the signed-in-profile without wiping the session. */
   refreshProfile: (provider: ProviderId) => Promise<void>;
   initLoginListener: () => Promise<() => void>;
+  /** Subscribe the app-wide router before local recognition dispatches. */
+  initCommandRouting: () => Promise<void>;
 }
 
 let activeProvider: VoiceProvider | null = null;
@@ -537,10 +540,11 @@ export const useSessionStore = create<SessionStore>((set, get) => {
    * Subscribe to the router once. These are app-wide Tauri events, not
    * per-connection provider callbacks, so they outlive a single call.
    */
-  const ensureCommandListeners = async () => {
-    if (commandListenersReady || !isTauri()) return;
-    commandListenersReady = true;
-    try {
+  const ensureCommandListeners = (): Promise<void> => {
+    if (commandListenersReady || !isTauri()) return Promise.resolve();
+    if (commandListenersPromise) return commandListenersPromise;
+    commandListenersPromise = (async () => {
+      try {
       const prefs = usePreferencesStore.getState();
       await setAssistantName(prefs.wakePhrase);
       await setCommandLocales([]);
@@ -561,8 +565,8 @@ export const useSessionStore = create<SessionStore>((set, get) => {
         if (!ok) toast(summary);
         // Tell the model what actually happened so it narrates the result
         // instead of improvising one.
-        commandHost.sendHidden(hiddenNote);
-        if (ok && followUp) {
+        if (get().connectionState === "connected") commandHost.sendHidden(hiddenNote);
+        if (ok && followUp && get().connectionState === "connected") {
           // The router interrupted the provider before executing the plugin
           // command. Ask it to answer from the selected result now available
           // in the hidden turn. This keeps the lookup flow provider-neutral.
@@ -571,10 +575,16 @@ export const useSessionStore = create<SessionStore>((set, get) => {
           );
         }
       });
+      commandListenersReady = true;
     } catch (error) {
       commandListenersReady = false;
       logError("command", error);
+      throw error;
+    } finally {
+      commandListenersPromise = null;
     }
+    })();
+    return commandListenersPromise;
   };
 
   /**
@@ -586,7 +596,9 @@ export const useSessionStore = create<SessionStore>((set, get) => {
     endCall: () => void get().endConversationByVoice(),
     isMuted: () => get().muted,
     toggleMute: () => get().toggleMute(),
-    sendHidden: (text) => get().sendText(text, { hidden: true }),
+    sendHidden: (text) => {
+      if (get().connectionState === "connected") get().sendText(text, { hidden: true });
+    },
     systemTurn: (text) => {
       patchActive((c) => ({
         ...c,
@@ -1293,6 +1305,7 @@ export const useSessionStore = create<SessionStore>((set, get) => {
       }
     },
 
+    initCommandRouting: () => ensureCommandListeners(),
     initLoginListener: async () => {
       // React StrictMode mounts effects twice; keep exactly one listener.
       if (loginListenerAttached) return () => {};

@@ -260,6 +260,22 @@ impl Router {
     }
 
     pub fn handle(&mut self, utterance: Utterance<'_>, now_ms: u64) -> Vec<CommandOutcome> {
+        self.handle_with_policy(utterance, now_ms, false)
+    }
+
+    /// Route an offline/local transcript. It shares confirmation, settle,
+    /// cooldown, and tool policy with provider captions while excluding
+    /// prompt-only intents before router state changes.
+    pub fn handle_local(&mut self, utterance: Utterance<'_>, now_ms: u64) -> Vec<CommandOutcome> {
+        self.handle_with_policy(utterance, now_ms, true)
+    }
+
+    fn handle_with_policy(
+        &mut self,
+        utterance: Utterance<'_>,
+        now_ms: u64,
+        local_only: bool,
+    ) -> Vec<CommandOutcome> {
         self.prune(now_ms);
 
         // Only the user issues commands. Matching the assistant's own captions
@@ -293,7 +309,12 @@ impl Router {
             }
         }
 
-        let Some(intent) = self.registry.match_utterance(utterance.text) else {
+        let intent = if local_only {
+            self.registry.match_local_utterance(utterance.text)
+        } else {
+            self.registry.match_utterance(utterance.text)
+        };
+        let Some(intent) = intent else {
             self.pending.remove(utterance.turn_id);
             return Vec::new();
         };

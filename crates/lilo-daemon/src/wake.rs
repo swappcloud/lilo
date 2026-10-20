@@ -2,6 +2,7 @@
 #[cfg(target_os = "linux")]
 use lilo_core::wake::Options;
 use lilo_core::wake::{Event, WakeListener};
+use std::collections::VecDeque;
 use std::path::Path;
 #[cfg(target_os = "linux")]
 use std::sync::mpsc;
@@ -11,8 +12,11 @@ use std::time::{Duration, Instant};
 pub struct WakeController {
     listener: Option<WakeListener>,
     events: Option<Receiver<Event>>,
+    local_commands: VecDeque<String>,
     #[cfg(target_os = "linux")]
     phrase: String,
+    #[cfg(target_os = "linux")]
+    command_phrases: Vec<String>,
     state: &'static str,
     retry_after: Option<Instant>,
     login_until: Option<Instant>,
@@ -23,8 +27,11 @@ impl WakeController {
         Self {
             listener: None,
             events: None,
+            local_commands: VecDeque::new(),
             #[cfg(target_os = "linux")]
             phrase: String::new(),
+            #[cfg(target_os = "linux")]
+            command_phrases: Vec::new(),
             state: "off",
             retry_after: None,
             login_until: None,
@@ -37,6 +44,7 @@ impl WakeController {
     pub fn pause(&mut self) {
         self.listener.take();
         self.events = None;
+        self.local_commands.clear();
         self.state = "off";
     }
     pub fn voice_started(&mut self) {
@@ -55,10 +63,25 @@ impl WakeController {
         // Active phone sign-in polling renews this delay without opening the mic.
         self.login_until = Some(Instant::now() + Duration::from_secs(30));
     }
-    pub fn update(&mut self, enabled: bool, ready: bool, phrase: &str, data_dir: &Path) -> bool {
+    pub fn update(
+        &mut self,
+        enabled: bool,
+        ready: bool,
+        phrase: &str,
+        command_phrases: &[String],
+        can_activate: bool,
+        data_dir: &Path,
+    ) -> bool {
         #[cfg(not(target_os = "linux"))]
         {
-            let _ = (enabled, ready, phrase, data_dir);
+            let _ = (
+                enabled,
+                ready,
+                phrase,
+                command_phrases,
+                can_activate,
+                data_dir,
+            );
             return false;
         }
         #[cfg(target_os = "linux")]
@@ -67,16 +90,19 @@ impl WakeController {
                 self.pause();
                 return false;
             }
-            if self.phrase != phrase {
+            if self.phrase != phrase || self.command_phrases != command_phrases {
                 self.pause();
                 self.retry_after = None;
                 self.phrase = phrase.into();
+                self.command_phrases = command_phrases.to_vec();
             }
             if self.listener.is_none()
                 && !self.retry_after.is_some_and(|until| Instant::now() < until)
             {
                 let (send, receive) = mpsc::sync_channel(8);
-                match WakeListener::start(Options::new(phrase, data_dir.join("wake")), send) {
+                let mut options = Options::new(phrase, data_dir.join("wake"));
+                options.command_phrases = command_phrases.to_vec();
+                match WakeListener::start(options, send) {
                     Ok(listener) => {
                         self.listener = Some(listener);
                         self.events = Some(receive);
@@ -95,6 +121,11 @@ impl WakeController {
                     match event {
                         Event::Ready => self.state = "listening",
                         Event::Detected => detected = true,
+                        Event::LocalCommand(text) => {
+                            if self.local_commands.len() < 8 {
+                                self.local_commands.push_back(text);
+                            }
+                        }
                         Event::Blocked { .. } => blocked = true,
                     }
                 }
@@ -104,13 +135,19 @@ impl WakeController {
                 self.state = "blocked";
                 self.retry_after = Some(Instant::now() + Duration::from_secs(30));
             }
-            if detected {
+            if detected && can_activate {
                 self.detections = self.detections.saturating_add(1);
+                let queued = std::mem::take(&mut self.local_commands);
                 self.pause();
+                self.local_commands = queued;
                 self.retry_after = Some(Instant::now() + Duration::from_secs(30));
             }
-            detected && !blocked
+            detected && can_activate && !blocked
         }
+    }
+
+    pub fn take_local_commands(&mut self) -> Vec<String> {
+        self.local_commands.drain(..).collect()
     }
 }
 
@@ -136,11 +173,11 @@ mod tests {
     #[test]
     fn disabled_and_in_call_hosts_never_start_a_microphone_process() {
         let mut wake = WakeController::new();
-        assert!(!wake.update(false, true, "lilo", Path::new("fixture")));
+        assert!(!wake.update(false, true, "lilo", &[], false, Path::new("fixture")));
         assert_eq!(wake.status()["state"], "off");
-        assert!(!wake.update(true, false, "lilo", Path::new("fixture")));
+        assert!(!wake.update(true, false, "lilo", &[], false, Path::new("fixture")));
         wake.pause_for_login();
-        assert!(!wake.update(true, true, "lilo", Path::new("fixture")));
+        assert!(!wake.update(true, true, "lilo", &[], false, Path::new("fixture")));
         assert!(wake.listener.is_none());
     }
 }

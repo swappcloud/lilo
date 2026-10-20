@@ -199,6 +199,14 @@ per command across turns.
 **Confirmation.** `requires_confirm` parks a command until the user confirms.
 Plugin commands use it for destructive operations and text entry.
 
+## 4.1 Local command recognition
+
+When the wake listener is enabled, the desktop can route a recognized local transcript through the same Rust command router and tool host without connecting a provider. The versioned `local-voice-transcript` payload contains only caller-owned transcript text, a bounded turn id, and a final flag; it never accepts a tool name or execution request. Invalid versions, unknown fields, empty text, and oversized values are rejected. Raw local speech is not written to command logs.
+
+The finite phrase catalog is derived from registered command templates, including plugin tools, so hosts do not maintain a second command list. Optional groups and alternatives expand within a fixed phrase budget. Prompt-only intents are excluded before router state changes. Commands that require confirmation continue through the existing confirmation flow, and free-text slots use the router's existing final/settle policy when the recognizer can provide dictation. A finite phrase-list recognizer can recognize literal command phrases, but it does not gain arbitrary slot dictation from this catalog.
+
+Windows uses its installed WinRT speech recognizer with the configured wake phrase and finite English command phrases. macOS forwards the existing helper's transcript updates; its on-device transcription remains controlled by the user's wake-listener switch. A direct command such as “stop the music” works while listening; saying the wake phrase first follows the normal wake path and may start a provider session.
+
 ## 5. Model bridge (assistant-driven commands)
 
 This is the critical design decision and must be capability-gated.
@@ -340,8 +348,12 @@ Deno with system mpv and a configured Linux audio endpoint. Remote resolver
 availability can vary. The phone search flow displays results and starts the
 exact selected YouTube video id rather than resolving only its title.
 
-The daemon uses local PocketSphinx wake-phrase recognition while idle and
-enabled. The phone also provides explicit voice controls. See the
+The daemon uses local PocketSphinx recognition while idle and enabled. Its
+finite English command grammar comes from the active command and plugin
+registry, so literal commands such as “stop the music” route to daemon tools
+without a provider account. The wake phrase starts provider voice only when a
+selected account is available. Free-text slots need a dictation-capable engine
+and are not provided by the daemon's keyword recognizer. The phone also provides explicit voice controls. See the
 [wake architecture](architecture.md#wake-word). The host needs its
 Linux browser dependencies plus usable microphone and speaker access. Support
 depends on the target CPU architecture and audio setup; Raspberry Pi checks are

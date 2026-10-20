@@ -1221,7 +1221,7 @@ fn confirm_command(
     }
 }
 
-/// Feed one caption to the router. Slotless commands come back immediately;
+/// Feed one caption into the router. Slotless commands come back immediately;
 /// commands carrying free text are released by the tick task once the caption
 /// stops growing.
 #[tauri::command]
@@ -1238,19 +1238,60 @@ fn handle_utterance(
         "assistant" => Speaker::Assistant,
         _ => Speaker::System,
     };
+    process_utterance(&app, &state, text, speaker, turn_id, is_final, false, true)
+}
+
+/// Local ingress shares the router, confirmation flow, and tool host while
+/// keeping speech out of logs and excluding prompt-only intents.
+#[tauri::command]
+fn handle_local_utterance(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    transcript: lilo_core::commands::local::Transcript,
+) -> Result<Vec<CommandOutcome>, AppError> {
+    if !transcript.valid() {
+        return Err(AppError::other("Invalid local voice transcript"));
+    }
+    if !state.wake.is_running() {
+        return Ok(vec![]);
+    }
+    Ok(process_utterance(
+        &app,
+        &state,
+        transcript.text,
+        Speaker::User,
+        format!("local:{}", transcript.turn_id),
+        transcript.is_final,
+        true,
+        false,
+    ))
+}
+
+fn process_utterance(
+    app: &AppHandle,
+    state: &AppState,
+    text: String,
+    speaker: Speaker,
+    turn_id: String,
+    is_final: bool,
+    local_only: bool,
+    log_text: bool,
+) -> Vec<CommandOutcome> {
     let outcomes = {
         let mut router = state.router.lock().expect("router poisoned");
-        router.handle(
-            Utterance {
-                text: &text,
-                speaker,
-                turn_id: &turn_id,
-                is_final,
-            },
-            now_ms(),
-        )
+        let utterance = Utterance {
+            text: &text,
+            speaker,
+            turn_id: &turn_id,
+            is_final,
+        };
+        if local_only {
+            router.handle_local(utterance, now_ms())
+        } else {
+            router.handle(utterance, now_ms())
+        }
     };
-    if speaker == Speaker::User && is_final {
+    if log_text && speaker == Speaker::User && is_final {
         logging::log(
             "command",
             &match outcomes.first() {
@@ -1259,7 +1300,7 @@ fn handle_utterance(
             },
         );
     }
-    dispatch_outcomes(&app, outcomes.clone());
+    dispatch_outcomes(app, outcomes.clone());
     outcomes
 }
 
@@ -2080,6 +2121,7 @@ pub fn run() {
             set_plugin_settings,
             run_tool,
             handle_utterance,
+            handle_local_utterance,
             list_commands,
             command_prompt_line,
             build_opening_prompt,

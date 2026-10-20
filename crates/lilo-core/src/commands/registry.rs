@@ -598,13 +598,33 @@ impl Registry {
         if tokens.is_empty() {
             return None;
         }
-        self.best(&tokens, text, false)
-            .or_else(|| self.best(&tokens, text, true))
+        self.best(&tokens, text, false, false)
+            .or_else(|| self.best(&tokens, text, true, false))
     }
 
-    fn best(&self, tokens: &[String], source: &str, fuzzy: bool) -> Option<Intent> {
+    /// Local recognition may execute deterministic local actions, but it
+    /// cannot turn a spoken phrase into a prompt for the active provider.
+    pub fn match_local_utterance(&self, text: &str) -> Option<Intent> {
+        let tokens = super::matcher::tokenize(text);
+        if tokens.is_empty() {
+            return None;
+        }
+        self.best(&tokens, text, false, true)
+            .or_else(|| self.best(&tokens, text, true, true))
+    }
+
+    fn best(
+        &self,
+        tokens: &[String],
+        source: &str,
+        fuzzy: bool,
+        local_only: bool,
+    ) -> Option<Intent> {
         let mut best: Option<Intent> = None;
         for command in &self.commands {
+            if local_only && command.descriptor.scope == CommandScope::Prompt {
+                continue;
+            }
             if command.descriptor.name == "media.play" && is_question_about_playback(source) {
                 continue;
             }
@@ -650,8 +670,28 @@ impl Registry {
         best
     }
 
-    /// The language the help panel should be written in: the first active
-    /// locale, or English when the user has not chosen one.
+    /// Finite recognition grammar, derived from registered commands rather than
+    /// a second host-specific command list. Slot tools still use free text engines.
+    pub fn local_voice_phrases(&self, locale: &str) -> Vec<String> {
+        let mut phrases = vec!["confirm".into(), "cancel".into()];
+        for command in &self.commands {
+            if command.descriptor.scope == CommandScope::Prompt {
+                continue;
+            }
+            for (language, template) in &command.descriptor.templates {
+                if !locale_serves(language, locale) {
+                    continue;
+                }
+                for phrase in super::local::phrases(template, &self.name) {
+                    if !phrases.contains(&phrase) && phrases.len() < super::local::MAX_PHRASES {
+                        phrases.push(phrase);
+                    }
+                }
+            }
+        }
+        phrases
+    }
+
     pub fn preferred_locale(&self) -> &str {
         self.locales.first().map(String::as_str).unwrap_or("en")
     }
@@ -1149,6 +1189,32 @@ mod tests {
             .find(|entry| entry.name == "acme.dance")
             .expect("the plugin command is listed");
         assert_eq!(play.tool.as_deref(), Some("acme_dance"));
+    }
+
+    #[test]
+    fn local_phrase_catalog_tracks_registered_commands_and_excludes_prompts() {
+        let mut registry = Registry::with_locales("lilo", &["en".to_string()]);
+        assert!(registry
+            .local_voice_phrases("en")
+            .iter()
+            .any(|phrase| phrase == "stop the music"));
+
+        registry
+            .register(vec![plugin_command("acme.dance", "start dancing")])
+            .unwrap();
+        assert!(registry
+            .local_voice_phrases("en")
+            .iter()
+            .any(|phrase| phrase == "start dancing"));
+
+        let mut prompt = plugin_command("acme.prompt", "tell the model something");
+        prompt.scope = CommandScope::Prompt;
+        registry.register(vec![prompt]).unwrap();
+        let phrases = registry.local_voice_phrases("en");
+        assert!(!phrases
+            .iter()
+            .any(|phrase| phrase == "tell the model something"));
+        assert!(phrases.len() <= super::super::local::MAX_PHRASES);
     }
 
     #[test]

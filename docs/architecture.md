@@ -272,8 +272,7 @@ preferences); the implementation is not:
   other platforms; the daemon starts its configured provider/account while
   idle. Capture stops before provider voice starts and when disabled.
 
-Say the configured wake phrase to start voice on every supported platform.
-Manual activation is an alternative everywhere. Linux uses the distribution's
+A direct local command such as “stop the music” can run through the shared command router without a provider when the wake listener is enabled. Saying the wake phrase follows the provider path. Manual activation is an alternative everywhere. Windows finite phrase mode exposes registered English literal commands; free-text slots require a recognizer that supplies dictation. This ingress has not yet been validated with a live microphone. Linux uses the distribution's
 BSD-licensed PocketSphinx 0.8 ABI and English acoustic model, with explicit
 LILO pronunciations. Custom phrases require dictionary words; unsupported
 phrases report a block. No local LLM or TTS is needed.

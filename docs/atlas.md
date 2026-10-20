@@ -6,7 +6,7 @@ hosting and device preferences. `app/src/providers/chatgpt/captionStream{,.test}
 assembles streamed turns for both desktop and daemon without host dependencies.
 `crates/lilo-core/src/persona.rs` builds the daemon's opening identity and language
 instructions; `crates/lilo-daemon/src/interactions.rs` delivers plugin questions.
-`crates/lilo-daemon/src/network.rs` owns the phone-managed Wi-Fi controller.
+`crates/lilo-daemon/src/network.rs` owns the phone-managed Wi-Fi controller. `wake.rs` builds the local finite command grammar from the active registry; `voice_session.rs` drains recognized commands through the shared command router while idle, even without an account.
 `app/src/features/daemon/VoicePanel.tsx` provides phone voice controls and captions;
 `useDaemonVoice.ts` owns their shared session controller, and `VoiceSessionControl.tsx`
 keeps session status and the stop action available in music and settings;
@@ -72,7 +72,8 @@ updates its line here in the same change.
 | `mood.rs` | A spoken mood word → the expression LILO's face shows |
 | `satellite.rs` | Satellite link protocol (PCM16 over TCP) |
 | `commands/manifest.rs` | Command declarations → model manifest text |
-| `commands/registry.rs` | The command registry, template parsing |
+| `commands/registry.rs` | Command registry, template parsing, finite local-recognition catalog |
+| `commands/local.rs` | Versioned local transcript IPC schema and finite template expansion |
 | `commands/matcher.rs` | O(n) utterance → intent matcher |
 | `commands/router.rs` | Precedence, debouncing, confirm, effects |
 | `media/player.rs` | mpv over JSON IPC, levels, watchdog |
@@ -146,7 +147,7 @@ Shared mobile frontend: `app/daemon.html`, `features/daemon/`; build with
 | `vision.rs` | Provider-neutral local screenshot relay; the active adapter owns any upload or video delivery |
 | `image_export.rs` | Validated plugin pictures exported to Downloads without overwriting existing files |
 | `playback.rs` | A tool result's `play: {track, artist}` starts that song through `media_play` |
-| `wake/{mod,macos,windows,unsupported}.rs` | Wake engines per OS |
+| `wake/{mod,macos,windows,unsupported}.rs` | Wake engines per OS; macOS forwards helper transcripts, Windows adds finite registered command phrases |
 | `audio.rs` | Optional native mic levels via `cpal` (`native-audio` feature) |
 | `resources.rs` | Memory/CPU of the whole app (process panel) |
 | `satellite.rs` | Driving a session without a microphone |

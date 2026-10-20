@@ -325,6 +325,21 @@ impl Session {
         self.dispatch(outcomes).await
     }
 
+    /// Run a locally recognized finite command without publishing the speech
+    /// as a conversation turn or depending on a connected voice provider.
+    pub async fn route_local(&mut self, text: &str, turn_id: &str) -> Vec<Routed> {
+        let outcomes = self.router.handle_local(
+            Utterance {
+                text,
+                speaker: Speaker::User,
+                turn_id,
+                is_final: true,
+            },
+            now_ms(),
+        );
+        self.dispatch(outcomes).await
+    }
+
     pub async fn route(&mut self, text: &str, turn_id: &str) -> Vec<Routed> {
         let first_seen_at = now_ms();
         let routed = self.route_caption(text, turn_id, true).await;
@@ -768,6 +783,25 @@ mod tests {
         assert!(status.get("playerFound").is_some());
         drop(registry);
 
+        session.shutdown().await;
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[tokio::test]
+    async fn local_stop_music_routes_through_daemon_tools_without_a_voice_account() {
+        let dir = temp_dir("local-stop-music");
+        let config = Config::parse("locales = [\"en\"]\n").unwrap();
+        let mut session = Session::start(&config, &dir).await.unwrap();
+        assert!(session.accounts.pick("chatgpt", None).is_none());
+        assert!(session.voice.is_none());
+
+        let routed = session.route_local("stop music", "local-turn-1").await;
+
+        assert_eq!(routed.len(), 1);
+        assert_eq!(routed[0].command, "media.stop");
+        assert_eq!(routed[0].tool.as_deref(), Some("media_stop"));
+        assert!(routed[0].error.is_none(), "{:?}", routed[0].error);
+        assert!(session.voice.is_none());
         session.shutdown().await;
         let _ = std::fs::remove_dir_all(dir);
     }

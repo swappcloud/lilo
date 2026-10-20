@@ -47,6 +47,7 @@ struct WinState {
     stop: Option<Arc<AtomicBool>>,
     running: Option<Arc<AtomicBool>>,
     phrase: Option<String>,
+    commands: Vec<String>,
 }
 
 impl WakeWatcher {
@@ -72,6 +73,7 @@ impl WakeWatcher {
 
     pub fn start(&self, app: &AppHandle, phrase: &str) -> Result<(), String> {
         let phrase = phrase.trim().to_string();
+        let commands = super::command_phrases(app);
         if phrase.is_empty() {
             return Err("wake phrase is empty".to_string());
         }
@@ -82,7 +84,10 @@ impl WakeWatcher {
                 .as_ref()
                 .map(|flag| flag.load(Ordering::Relaxed))
                 .unwrap_or(false);
-            if live && state.phrase.as_deref() == Some(phrase.as_str()) {
+            if live
+                && state.phrase.as_deref() == Some(phrase.as_str())
+                && state.commands == commands
+            {
                 log(
                     "wake",
                     "winrt recognizer already listening; ignoring duplicate start",
@@ -99,6 +104,7 @@ impl WakeWatcher {
             state.stop = Some(stop.clone());
             state.running = Some(running.clone());
             state.phrase = Some(phrase.clone());
+            state.commands = commands;
         }
 
         let handle = app.clone();
@@ -171,7 +177,13 @@ fn run(app: AppHandle, phrase: String, stop: Arc<AtomicBool>, running: Arc<Atomi
 fn listen(app: &AppHandle, phrase: &str, stop: &AtomicBool) -> Result<(), EngineError> {
     let recognizer = create_recognizer()?;
 
-    let words: IIterable<HSTRING> = vec![HSTRING::from(phrase)].into();
+    let mut phrases = super::command_phrases(app);
+    phrases.push(phrase.into());
+    let words: IIterable<HSTRING> = phrases
+        .iter()
+        .map(|text| HSTRING::from(text.as_str()))
+        .collect::<Vec<_>>()
+        .into();
     let constraint = SpeechRecognitionListConstraint::Create(&words)
         .map_err(|e| EngineError::new("recognizer-error", format!("wake phrase rejected: {e}")))?;
     recognizer
@@ -273,23 +285,18 @@ fn install_result_handler(
                 return Ok(());
             };
             let text = text.to_string();
-            if !normalize(&text).contains(&target) {
-                return Ok(());
-            }
+
             let now = millis();
             let previous = last.load(Ordering::Relaxed);
             if now.saturating_sub(previous) < COOLDOWN_MS {
                 return Ok(());
             }
             last.store(now, Ordering::Relaxed);
-            log(
-                "wake",
-                &format!(
-                    "winrt phrase detected (\"{}\") -> emitting wake-word",
-                    text.trim()
-                ),
-            );
-            let _ = handle.emit(EVENT_NAME, ());
+            if normalize(&text) == target {
+                let _ = handle.emit(EVENT_NAME, ());
+            } else {
+                super::emit_transcript(&handle, text, uuid::Uuid::new_v4().to_string(), true);
+            }
             Ok(())
         }))
         .map_err(|e| EngineError::new("recognizer-error", format!("result handler failed: {e}")))?;
