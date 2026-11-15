@@ -2014,33 +2014,36 @@ pub fn run() {
             set_startup(&provisioner, "Starting", false);
             tauri::async_runtime::spawn(async move {
                 set_startup(&provisioner, "Checking media components", false);
-                let result = {
-                    let state = provisioner.state::<AppState>();
-                    let reporter = provisioner.clone();
-                    state
-                        .media
-                        .install_dependencies_with(|step| set_startup(&reporter, step, false))
-                        .await
-                };
-                match result {
-                    Ok(tools) => {
-                        for tool in tools {
-                            logging::log(
-                                "media",
-                                &format!(
-                                    "{}: {} ({})",
-                                    tool.name,
-                                    if tool.found { "ready" } else { "missing" },
-                                    tool.source
-                                ),
-                            );
+                let installer = provisioner.clone();
+                tauri::async_runtime::spawn(async move {
+                    let result = {
+                        let state = installer.state::<AppState>();
+                        state
+                            .media
+                            .install_dependencies_with(|step| logging::log("media", step))
+                            .await
+                    };
+                    match result {
+                        Ok(tools) => {
+                            for tool in tools {
+                                logging::log(
+                                    "media",
+                                    &format!(
+                                        "{}: {} ({})",
+                                        tool.name,
+                                        if tool.found { "ready" } else { "missing" },
+                                        tool.source
+                                    ),
+                                );
+                            }
+                        }
+                        Err(error) => {
+                            logging::log("media", &format!("dependency install: {error}"))
                         }
                     }
-                    Err(error) => logging::log("media", &format!("dependency install: {error}")),
-                }
-                // Plugins are loaded after the media components so a slow
-                // plugin handshake cannot delay the window, and before the
-                // splash clears so the tool list is complete on first paint.
+                });
+                // Optional downloads run independently so offline upgrades do
+                // not hold the app behind the splash. Existing tools remain usable.
                 load_plugins(&provisioner).await;
 
                 // Done either way: a missing optional component must not hold

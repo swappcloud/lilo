@@ -14,7 +14,7 @@ use serde_json::Value;
 pub struct DaemonMediaProvider {
     service: Arc<MediaService>,
     watcher: std::sync::Mutex<Option<tokio::task::JoinHandle<()>>>,
-    provisioned: tokio::sync::Mutex<bool>,
+    provisioned: Arc<tokio::sync::Mutex<bool>>,
 }
 
 impl DaemonMediaProvider {
@@ -22,7 +22,7 @@ impl DaemonMediaProvider {
         Self {
             service,
             watcher: std::sync::Mutex::new(None),
-            provisioned: tokio::sync::Mutex::new(false),
+            provisioned: Arc::new(tokio::sync::Mutex::new(false)),
         }
     }
 }
@@ -43,16 +43,17 @@ impl ToolProvider for DaemonMediaProvider {
     fn invoke<'a>(&'a self, tool: &'a str, args: &'a Value) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
             if matches!(tool, "media_play" | "media_radio" | "media_search") {
-                let mut provisioned = self.provisioned.lock().await;
-                if !*provisioned {
-                    if self.service.install_dependencies().await.is_err() {
-                        crate::log::warn(
-                            "Media tool update failed; continuing with available tools.",
-                        );
+                if let Ok(mut provisioned) = self.provisioned.try_lock() {
+                    if !*provisioned {
+                        if self.service.install_dependencies().await.is_err() {
+                            crate::log::warn(
+                                "Media tool update failed; continuing with available tools.",
+                            );
+                        }
+                        // Retry on the next daemon launch or explicit install,
+                        // rather than blocking every command on the same download.
+                        *provisioned = true;
                     }
-                    // Retry on the next daemon launch or explicit install,
-                    // rather than blocking every command on the same download.
-                    *provisioned = true;
                 }
             }
             self.service.invoke(tool, args).await
@@ -68,8 +69,22 @@ impl ToolProvider for DaemonMediaProvider {
             let mut watcher = self.watcher.lock().expect("media watcher poisoned");
             if watcher.is_none() {
                 let service = self.service.clone();
+                let provisioned = self.provisioned.clone();
                 *watcher = Some(tokio::spawn(async move {
-                    service.start().await;
+                    let updating = async {
+                        let mut ready = provisioned.lock().await;
+                        if !*ready {
+                            if service.install_dependencies().await.is_err() {
+                                crate::log::warn(
+                                    "Media tool update failed; continuing with available tools.",
+                                );
+                            }
+                            *ready = true;
+                        }
+                    };
+                    // Status and playback observation continue while an
+                    // optional download is waiting on the network.
+                    tokio::join!(updating, service.start());
                 }));
             }
         })
@@ -141,6 +156,26 @@ mod tests {
             assert_eq!(std::fs::read(&previous).unwrap(), b"previous tool");
         }
         std::fs::remove_dir_all(data).unwrap();
+    }
+
+    #[tokio::test]
+    async fn an_upgrade_in_progress_does_not_delay_media_dispatch() {
+        let data =
+            std::env::temp_dir().join(format!("lilo-daemon-updating-{}", uuid::Uuid::new_v4()));
+        let provider = DaemonMediaProvider::new(Arc::new(MediaService::new(
+            MediaSettings::default(),
+            lilo_core::http::client(),
+            data,
+        )));
+        let _updating = provider.provisioned.lock().await;
+        let error = tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            provider.invoke("media_search", &serde_json::json!({})),
+        )
+        .await
+        .expect("media dispatch must not wait for the update")
+        .unwrap_err();
+        assert!(error.to_string().contains("nothing to search for"));
     }
 
     #[tokio::test]

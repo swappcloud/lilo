@@ -318,6 +318,10 @@ fn make_executable(_path: &Path) -> Result<()> {
 /// Download and activate the app's pinned version without overwriting old tools.
 /// A failed download, extraction or smoke test leaves the previous version active.
 pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Result<PathBuf> {
+    // Startup and an explicit install can overlap. Recheck the selected pin
+    // after acquiring the gate instead of downloading the same archive twice.
+    static INSTALL: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _install = INSTALL.lock().await;
     if is_current(data_dir, tool) {
         return Ok(managed_path(data_dir, tool));
     }
