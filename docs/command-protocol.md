@@ -278,14 +278,13 @@ grants no `shell:*`, and `wake/macos.rs` already spawns this way.
 
 **Provisioning** (`provision.rs`, `managed.rs` and `downloads.json`). The shared
 catalog pins versions, platform availability, archive layout and SHA-256 digests
-for desktop and daemon. The release workflow retains every archive in the public
-`media-tools-v1` LILO release before building installers. Asset names contain
-the pinned digest; publication verifies public downloads and never overwrites or
-deletes retained files. Upstream release pruning cannot remove those copies.
+for desktop and daemon. Media tools stay external dependencies, installed from
+their own upstream release the way a package manager installs a pinned package:
+LILO never rehosts those binaries.
 
 Startup installs missing tools and upgrades LILO-managed tools to the app's
-validated pins. It tries the retained copy first, then the original HTTPS source,
-with the same pinned digest for both. A checksum mismatch fails closed. Downloads
+validated pins, downloading from the pinned HTTPS source. A checksum mismatch
+fails closed. Downloads
 are staged under the app data directory, extracted with their bundle layout and
 run with `--version` before activation. Each digest has its own directory, so a
 running executable is never overwritten. An atomic installed-version record
@@ -304,8 +303,8 @@ artifact is pinned for them.
 Before changing pins, run `node scripts/media-tools.mjs --verify`. PR CI checks
 changed pins for every platform. Native PR and release checks also install and
 run supported tools, including Deno; an installer cannot be published if its
-native media smoke test fails. The offline suite tests retention, checksum
-rejection, resumable publication, platform selection and safe activation.
+native media smoke test fails. The offline suite tests pin validation, checksum
+rejection, platform selection and safe activation.
 
 | Tool | Automatic platforms | Pinned upstream source |
 |---|---|---|

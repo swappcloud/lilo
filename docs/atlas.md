@@ -378,5 +378,5 @@ Audio permission regression tests: `app/src/shared/hooks/useMediaDevices.test.ts
 - `app/src/lib/browserCrypto{,.test}.ts` — authenticated packets on HTTPS or trusted LAN HTTP, with WebCrypto and a noble AES-GCM fallback.
 
 - `crates/lilo-core/src/http.rs` owns shared ring TLS initialization for reqwest clients in desktop, daemon and plugins.
-- `scripts/media-tools.mjs` and its tests validate and retain pinned archives in the public LILO media release; `scripts/media-smoke.mjs` runs native release installation checks.
+- `scripts/media-tools.mjs` and its tests validate the pinned upstream archives; `scripts/media-smoke.mjs` runs native release installation checks.
 - `.github/dependabot.yml` proposes weekly stable npm/Cargo upgrades through the same PR validation gates.

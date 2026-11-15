@@ -35,26 +35,6 @@ jobs:
           RELEASE_SHA: ${{ github.sha }}
         run: node scripts/nightly-release.mjs
 
-  media:
-    needs: plan
-    if: needs.plan.outputs.build == 'true'
-    runs-on: ubuntu-22.04
-    timeout-minutes: 20
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-      - name: Retain and verify pinned media tools for every platform
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_SHA: ${{ github.sha }}
-        run: node scripts/media-tools.mjs --publish
   frontend:
     needs: plan
     if: needs.plan.outputs.build == 'true'
@@ -84,7 +64,7 @@ jobs:
           if-no-files-found: error
 
   build:
-    needs: [plan, frontend, media]
+    needs: [plan, frontend]
     if: needs.plan.outputs.build == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -159,8 +139,8 @@ jobs:
   publish:
     # Publish completed targets even when another matrix target failed. A rerun
     # of failed jobs keeps the successful artifacts and adds the missing target.
-    if: always() && needs.plan.outputs.build == 'true' && needs.frontend.result == 'success' && needs.media.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'failure')
-    needs: [plan, frontend, media, build]
+    if: always() && needs.plan.outputs.build == 'true' && needs.frontend.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'failure')
+    needs: [plan, frontend, build]
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     permissions:

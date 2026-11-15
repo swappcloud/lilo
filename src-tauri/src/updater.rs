@@ -379,7 +379,7 @@ mod tests {
     #[test]
     fn test_release_manifest_includes_prereleases_and_skips_drafts() {
         let releases = json!([
-            { "tag_name": "media-tools-v1", "assets": [{ "name": "latest.json", "browser_download_url": "https://github.com/swappcloud/lilo/releases/download/media-tools-v1/latest.json" }] },
+            { "tag_name": "docs-snapshot", "assets": [{ "name": "latest.json", "browser_download_url": "https://github.com/swappcloud/lilo/releases/download/docs-snapshot/latest.json" }] },
             { "draft": true, "tag_name": "0.3.0", "assets": [{ "name": "latest.json", "browser_download_url": "https://github.com/swappcloud/lilo/releases/download/0.3.0/latest.json" }] },
             { "draft": false, "prerelease": true, "tag_name": "0.2.0", "assets": [{ "name": "latest.json", "browser_download_url": "https://github.com/swappcloud/lilo/releases/download/0.2.0/latest.json" }] }
         ]);
