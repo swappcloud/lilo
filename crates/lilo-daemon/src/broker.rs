@@ -31,7 +31,7 @@ impl BrokerClient {
         Ok(Self {
             endpoint: endpoint.trim_end_matches('/').into(),
             token: token.trim().into(),
-            client: reqwest::Client::builder()
+            client: lilo_core::http::builder()
                 .timeout(Duration::from_secs(45))
                 .redirect(reqwest::redirect::Policy::none())
                 .build()?,

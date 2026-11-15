@@ -21,3 +21,6 @@ assert.deepEqual(selectPlatformTests(['crates/lilo-core/src/plugins/http.rs']), 
   windows: true,
   macos_intel: true,
 });
+for (const path of ['crates/lilo-core/src/media/provision.rs', 'crates/lilo-core/src/media/downloads.json']) {
+  assert.deepEqual(selectPlatformTests([path]), { windows: true, macos_intel: true });
+}

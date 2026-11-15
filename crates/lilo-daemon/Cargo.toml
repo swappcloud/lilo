@@ -16,6 +16,6 @@ serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
 toml.workspace = true
-tiny_http = "0.12"
+tiny_http = "0.12.0"
 
 uuid.workspace = true

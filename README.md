@@ -90,8 +90,8 @@ phone pairing, and resource measurements.
 
 ## Development requirements
 
-- Node 22 and npm 10.
-- Rust stable (`cargo`). The setup scripts install it if needed.
+- Node 22.18 or newer and npm 10.
+- Rust stable 1.90 or newer (`cargo`). The setup scripts install it if needed.
 - A Tauri v2 WebView: WebView2 on Windows, WKWebView on macOS, or WebKitGTK on
   Linux.
 - Windows setup installs the required C++ toolchain. It uses MSVC when

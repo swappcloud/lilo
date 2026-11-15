@@ -357,7 +357,7 @@ mod tests {
             .split('.')
             .next()
             .unwrap();
-        let client = reqwest::Client::builder()
+        let client = lilo_core::http::builder()
             .timeout(Duration::from_secs(5))
             .build()
             .unwrap();

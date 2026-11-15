@@ -66,6 +66,32 @@ the environment. Generate a key with `npm exec tauri signer generate`; keep
 it outside the checkout. GitHub Actions must have the corresponding secret
 configured before the first signed release is built.
 
+### Retained media dependencies
+
+Every app release first retains the archives in `crates/lilo-core/src/media/downloads.json`
+under the public `media-tools-v1` release. Keep this release and all its assets:
+distributed apps depend on those content-addressed files. The publisher verifies
+SHA-256 before upload and checks the public copy afterward. Uploads are resumable
+and never use `--clobber`. A missing or corrupted retained file blocks publication.
+The non-semantic archive tag is ignored by the app updater and release planner.
+
+Use `node scripts/media-tools.mjs --verify` when changing a pin. Select stable
+upstream releases and take hashes from independent release asset metadata, not
+from the binary download server. Preserve compatible variants when a newer
+binary raises its minimum OS. PR checks run native installation smoke tests on
+Linux, Windows and Intel macOS; release builds also run them on Apple Silicon.
+System packages and explicit binary paths remain outside app-managed updates.
+
+To test an app update, leave the current installed version in place, open
+Settings → Updates, check for updates and accept the native confirmation after
+ending voice sessions. Check the new app version, retained accounts/settings,
+media tool versions and playback. Updating the app also updates its managed
+tools on the next launch. A failed tool upgrade keeps the previous executable
+active and retries later; it does not erase accounts or block app startup.
+Linux AppImage supports in-app installation; a .deb installation links to the
+new package instead. An installed version without the updater needs one manual
+installation before this flow is available.
+
 ### Updates inside the app
 
 Release metadata and installers must be publicly downloadable without a GitHub

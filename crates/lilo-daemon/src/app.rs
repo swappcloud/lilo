@@ -159,7 +159,7 @@ impl Session {
         config.wake_phrase = device.wake_phrase.clone();
         config.locales = device.locales.clone();
         let accounts = AccountStore::load(data_dir.join("accounts.json"));
-        let http = reqwest::Client::builder()
+        let http = lilo_core::http::builder()
             .user_agent(settings.get().user_agent)
             .build()
             .context("could not build the HTTP client")?;

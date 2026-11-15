@@ -152,7 +152,7 @@ pub(crate) fn request(permissions: &[String], input: &str, value: Value) -> Resu
 
 async fn send(permissions: &[String], mut url: Url, options: Options) -> Result<Response> {
     // No browser account, inherited proxy credentials, cookie jar or implicit redirects.
-    let client = reqwest::Client::builder()
+    let client = crate::http::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .build()
@@ -281,6 +281,9 @@ mod tests {
             while Instant::now() < until {
                 match listener.accept() {
                     Ok((mut stream, _)) => {
+                        // macOS can inherit nonblocking mode from the listener;
+                        // wait for the complete request before replying.
+                        stream.set_nonblocking(false).unwrap();
                         stream
                             .set_read_timeout(Some(Duration::from_secs(1)))
                             .unwrap();

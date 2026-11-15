@@ -263,7 +263,7 @@ async fn main() -> anyhow::Result<()> {
         let user_agent = lilo_core::settings::SettingsStore::load(data_dir.join("settings.json"))
             .get()
             .user_agent;
-        let http = reqwest::Client::builder()
+        let http = lilo_core::http::builder()
             .user_agent(user_agent.clone())
             .build()
             .context("could not build the HTTP client")?;

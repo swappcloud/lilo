@@ -40,7 +40,7 @@ to every task unless the user explicitly overrides them.
   embedded web browsing and the user's own provider accounts. Voice conversations,
   local commands and plugins support language practice, notes, focus, music and weather.
   Desktop targets: Windows, macOS and Linux — Tauri v2 (Rust) + React 19 + TypeScript +
-  Vite 7 + Zustand. The shared core also powers a headless Linux daemon for commands and
+  Vite 8 + Zustand. The shared core also powers a headless Linux daemon for commands and
   compatible plugins, local media, and standalone ChatGPT voice through an optional
   browser/audio host controlled from the phone. A paired desktop satellite remains a separate option.
   Standalone daemon voice currently supports ChatGPT; Claude, Grok and Qwen voice
@@ -206,4 +206,4 @@ to every task unless the user explicitly overrides them.
   and PulseAudio capture, with desktop and daemon lifecycle adapters.
   The wake contract (commands, `wake-word` event, phrase prefs) is
   OS-independent; engines live one file per OS under `src-tauri/src/wake/`.
-- Toolchain: Node 22, npm 10, Rust stable, Xcode swiftc (macOS arm64).
+- Toolchain: Node 22.18+, npm 10, Rust stable 1.90+, Xcode swiftc (macOS arm64).

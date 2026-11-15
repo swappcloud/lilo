@@ -159,7 +159,11 @@ fn safe_relative(path: &str) -> Result<&str> {
 fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    format!("{:x}", hasher.finalize())
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 /// Checks `bytes` against the published digest and returns the bytes to
@@ -529,7 +533,7 @@ mod tests {
             &root
         )
         .is_empty());
-        let error = install(&reqwest::Client::new(), "invalid-source", &plugin, &root)
+        let error = install(&crate::http::client(), "invalid-source", &plugin, &root)
             .await
             .unwrap_err();
         assert!(error.to_string().contains("replaced"));
@@ -595,7 +599,7 @@ mod tests {
         let market = temp("market");
         let plugins = temp("plugins");
         let entry = write_marketplace(&market, "com.acme.hello", "1.0.0", "#!/bin/sh\n");
-        let http = reqwest::Client::new();
+        let http = crate::http::client();
 
         let index = fetch_index(&http, market.to_str().unwrap()).await.unwrap();
         assert_eq!(index.plugins.len(), 1);
@@ -625,7 +629,7 @@ mod tests {
             "#!/bin/sh\nrm -rf /\n",
         )
         .unwrap();
-        let http = reqwest::Client::new();
+        let http = crate::http::client();
 
         let error = install(&http, market.to_str().unwrap(), &entry, &plugins)
             .await
@@ -774,7 +778,7 @@ mod tests {
         let mut entry = write_marketplace(&market, "com.acme.real", "1.0.0", "#!/bin/sh\n");
         // The index claims another identity than the files it points to.
         entry.id = "com.acme.other".to_string();
-        let http = reqwest::Client::new();
+        let http = crate::http::client();
         let error = install(&http, market.to_str().unwrap(), &entry, &plugins)
             .await
             .unwrap_err();
@@ -892,7 +896,7 @@ mod tests {
             "#!/bin/sh
 ",
         );
-        let http = reqwest::Client::new();
+        let http = crate::http::client();
         install(&http, market.to_str().unwrap(), &entry, &plugins)
             .await
             .unwrap();
@@ -953,7 +957,7 @@ mod tests {
         let market = temp("off-market");
         let plugins = temp("off-plugins");
         let entry = write_marketplace(&market, "com.acme.off", "1.0.0", "#!/bin/sh\n");
-        let http = reqwest::Client::new();
+        let http = crate::http::client();
         install(&http, market.to_str().unwrap(), &entry, &plugins)
             .await
             .unwrap();

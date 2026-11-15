@@ -735,7 +735,7 @@ mod tests {
         let bin = PathBuf::from(std::env::var("LILO_YTDLP").expect("set LILO_YTDLP"));
         let seed = track("fJ9rUzIMcZQ");
         let related = Resolver::YtDlp { bin, runtime: None }
-            .related(&reqwest::Client::new(), &seed, &[], 10)
+            .related(&crate::http::client(), &seed, &[], 10)
             .await
             .expect("a mix");
         for track in &related {
@@ -754,7 +754,7 @@ mod tests {
             base_url: "http://127.0.0.1:1".into(),
         };
         let err = resolver
-            .search(&reqwest::Client::new(), &Query::default())
+            .search(&crate::http::client(), &Query::default())
             .await
             .unwrap_err();
         assert!(err.to_string().contains("nothing to search for"));
