@@ -8,6 +8,7 @@ Describe changes under **Unreleased** as they land. Version-specific notes are u
 
 - Retain verified media tool archives for all supported platforms so removed upstream releases cannot break installation.
 - Upgrade app-managed media tools safely after app updates, preserving the previous executable on failure.
+- Wait for GitHub to serve freshly retained media archives instead of failing a release a few milliseconds after upload.
 
 ### Changed
 

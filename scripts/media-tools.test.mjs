@@ -84,9 +84,65 @@ test('publication is resumable and never replaces retained assets', async () => 
 });
 
 test('a missing retained asset fails release verification even if upstream works', async () => {
+  const sleeps = [];
   await assert.rejects(publishTools(manifest, {
     existing: [assetName(tool)],
     request: async (url) => url === tool.url ? response(bytes) : response('', 404),
     upload: async () => assert.fail('existing assets must not be replaced'),
+    sleep: async (milliseconds) => sleeps.push(milliseconds),
+    deadline: 0,
   }), /retained/i);
+  assert.deepEqual(sleeps, []);
+});
+
+test('a fresh upload is verified once the mirror finishes propagating it', async () => {
+  const uploads = [];
+  const sleeps = [];
+  let clock = 0;
+  let mirrorFetches = 0;
+  await publishTools(manifest, {
+    existing: [],
+    request: async (url) => {
+      if (url === tool.url) return response(bytes);
+      mirrorFetches += 1;
+      return mirrorFetches <= 3 ? response('', 404) : response(bytes);
+    },
+    upload: async (name, data) => uploads.push([name, Buffer.from(data)]),
+    sleep: async (milliseconds) => {
+      sleeps.push(milliseconds);
+      clock += milliseconds;
+    },
+    now: () => clock,
+    deadline: 60_000,
+  });
+  assert.deepEqual(uploads, [[assetName(tool), bytes]]);
+  assert.deepEqual(sleeps, [5_000, 5_000]);
+});
+
+test('mirror verification gives up when an asset never becomes public', async () => {
+  const sleeps = [];
+  let clock = 0;
+  await assert.rejects(publishTools(manifest, {
+    existing: [assetName(tool)],
+    request: async (url) => url === tool.url ? response(bytes) : response('', 404),
+    upload: async () => assert.fail('existing assets must not be replaced'),
+    sleep: async (milliseconds) => {
+      sleeps.push(milliseconds);
+      clock += milliseconds;
+    },
+    now: () => clock,
+    deadline: 12_000,
+  }), /retained/i);
+  assert.deepEqual(sleeps, [5_000, 5_000, 5_000]);
+});
+
+test('propagation retries never publish an asset whose mirror copy is corrupted', async () => {
+  const sleeps = [];
+  await assert.rejects(publishTools(manifest, {
+    existing: [assetName(tool)],
+    request: async (url) => url === tool.url ? response(bytes) : response('corrupted'),
+    upload: async () => assert.fail('existing assets must not be replaced'),
+    sleep: async (milliseconds) => sleeps.push(milliseconds),
+  }), /checksum/);
+  assert.deepEqual(sleeps, []);
 });

@@ -57,16 +57,37 @@ export async function downloadVerified(manifest, tool, request = requestDownload
   throw new Error(`${tool.name} ${tool.version}: ${retainedOnly ? 'retained asset' : 'pinned download'} unavailable`);
 }
 
-export async function publishTools(manifest, { existing, request = requestDownload, upload }) {
+// GitHub accepts an archive before it serves it: a fresh asset answers 404 at the
+// public download URL for about a minute. Publish every missing archive first and
+// only then verify the whole mirror against a deadline, instead of racing each
+// upload. A wrong digest or an unsafe redirect still fails immediately.
+const mirrorPollMs = 5_000;
+const mirrorDeadlineMs = 5 * 60_000;
+const pause = (milliseconds) => new Promise((resume) => setTimeout(resume, milliseconds));
+
+export async function publishTools(manifest, {
+  existing, request = requestDownload, upload, sleep = pause, now = Date.now, deadline = mirrorDeadlineMs,
+}) {
   validateCatalog(manifest);
   for (const tool of manifest.tools) {
     const name = assetName(tool);
-    if (!existing.includes(name)) {
-      const bytes = await downloadVerified(manifest, tool, request);
-      await upload(name, bytes);
+    if (existing.includes(name)) continue;
+    const bytes = await downloadVerified(manifest, tool, request);
+    await upload(name, bytes);
+  }
+  for (const tool of manifest.tools) {
+    const started = now();
+    for (;;) {
+      try {
+        await downloadVerified(manifest, tool, request, true);
+        break;
+      } catch (error) {
+        const unavailable = /retained asset unavailable/.test(String(error?.message));
+        if (!unavailable || now() - started >= deadline) throw error;
+        console.warn(`${assetName(tool)}: not served by the mirror yet, retrying`);
+        await sleep(mirrorPollMs);
+      }
     }
-    // Verify public availability too: an upload alone is not a working mirror.
-    await downloadVerified(manifest, tool, request, true);
   }
 }
 
