@@ -54,12 +54,28 @@ pub(super) fn activate(data: &Path, tool: &str, record: &Installed) -> Result<Pa
     let dir = super::provision::install_dir(data);
     let staging = dir.join(format!(".{tool}-{}.installed.part", uuid::Uuid::new_v4()));
     std::fs::write(&staging, serde_json::to_vec(record)?)?;
-    let result = std::fs::rename(&staging, dir.join(format!("{tool}.installed.json")));
+    let result = publish(&staging, &dir.join(format!("{tool}.installed.json")));
     if result.is_err() {
         let _ = std::fs::remove_file(staging);
     }
     result?;
     Ok(target)
+}
+
+/// Windows scanners can hold a freshly written record for a moment. A short
+/// retry keeps a healthy installation from being reported as failed.
+fn publish(staging: &Path, target: &Path) -> std::io::Result<()> {
+    let mut last = None;
+    for delay in [0u64, 100, 300] {
+        if delay > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+        }
+        match std::fs::rename(staging, target) {
+            Ok(()) => return Ok(()),
+            Err(error) => last = Some(error),
+        }
+    }
+    Err(last.expect("a rename attempt ran"))
 }
 
 #[cfg(test)]

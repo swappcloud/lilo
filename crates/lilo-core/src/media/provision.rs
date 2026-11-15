@@ -279,7 +279,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 #[cfg(unix)]
-fn make_executable(path: &Path) -> Result<()> {
+fn make_executable(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt;
     let mut perms = std::fs::metadata(path)?.permissions();
     perms.set_mode(0o755);
@@ -288,7 +288,7 @@ fn make_executable(path: &Path) -> Result<()> {
 }
 
 #[cfg(not(unix))]
-fn make_executable(_path: &Path) -> Result<()> {
+fn make_executable(_path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
@@ -308,13 +308,76 @@ pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Resu
             super::binaries::status(tool, "").install_hint
         ))
     })?;
+    // Clear leftovers before downloading again so a failed install does not
+    // keep paying for them in disk space.
+    discard_stale_attempts(&install_dir(data_dir), tool);
     let bytes = download_verified(http, &spec).await?;
-    let dir = install_dir(data_dir);
-    std::fs::create_dir_all(&dir)?;
-    let id = uuid::Uuid::new_v4();
-    let staging = dir.join(format!(".{tool}-{id}.part"));
-    let archive = dir.join(format!(".{tool}-{id}.archive"));
-    std::fs::create_dir_all(&staging)?;
+    // Extraction goes straight into the content-addressed directory. On
+    // Windows a just-executed executable stays locked for a moment, so
+    // renaming the directory that contains it fails with "Access is denied";
+    // the activation record is the only thing written afterwards.
+    let root = super::managed::root(data_dir, tool, spec.sha256);
+    let result = install_archive(data_dir, tool, &spec, &root, &bytes).await;
+    if result.is_err() {
+        // A failed attempt must not leave a directory that looks installed.
+        let _ = std::fs::remove_dir_all(&root);
+    }
+    result
+}
+
+/// Earlier installer versions staged every download in `.<tool>-<id>.part`
+/// directories and left them behind when Windows kept the executable locked.
+/// They are never reused, so clear them once an install actually runs.
+fn discard_stale_attempts(dir: &Path, tool: &str) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let prefix = format!(".{tool}-");
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if !name.starts_with(&prefix) {
+            continue;
+        }
+        let path = entry.path();
+        if name.ends_with(".part") {
+            let _ = if path.is_dir() {
+                std::fs::remove_dir_all(&path)
+            } else {
+                std::fs::remove_file(&path)
+            };
+        } else if name.ends_with(".archive") {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
+}
+
+/// A pinned archive always produces the same directory, so leftovers from an
+/// interrupted attempt are replaced instead of being reused or renamed.
+fn fresh_directory(path: &Path) -> std::io::Result<()> {
+    match std::fs::remove_dir_all(path) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error),
+    }
+    std::fs::create_dir_all(path)
+}
+
+async fn install_archive(
+    data_dir: &Path,
+    tool: &str,
+    spec: &ToolSpec,
+    root: &Path,
+    bytes: &[u8],
+) -> Result<PathBuf> {
+    let describe = |step: &str, error: std::io::Error| {
+        AppError::other(format!(
+            "could not {step} {} {}: {error}",
+            spec.name, spec.version
+        ))
+    };
+    fresh_directory(root).map_err(|error| describe("prepare", error))?;
+    let archive = install_dir(data_dir).join(format!(".{tool}-{}.archive", uuid::Uuid::new_v4()));
     let result = async {
         let entry = match spec.payload {
             Payload::Executable => {
@@ -329,15 +392,15 @@ pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Resu
             | Payload::SevenZip { entry }
             | Payload::ZipTarGz { entry, .. } => entry.into(),
         };
-        let candidate = staging.join(&entry);
+        let candidate = root.join(&entry);
         if spec.payload == Payload::Executable {
-            std::fs::write(&candidate, &bytes)?;
+            std::fs::write(&candidate, bytes).map_err(|error| describe("write", error))?;
         } else {
-            std::fs::write(&archive, &bytes)?;
+            std::fs::write(&archive, bytes).map_err(|error| describe("write", error))?;
             let mut command =
                 if matches!(spec.payload, Payload::Zip { .. }) && cfg!(target_os = "linux") {
                     let mut unzip = super::process::quiet_command("unzip");
-                    unzip.arg("-oq").arg(&archive).arg("-d").arg(&staging);
+                    unzip.arg("-oq").arg(&archive).arg("-d").arg(root);
                     unzip
                 } else {
                     let mut tar = super::process::quiet_command(archive_extractor());
@@ -348,7 +411,7 @@ pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Resu
                     })
                     .arg(&archive)
                     .arg("-C")
-                    .arg(&staging);
+                    .arg(root);
                     tar
                 };
             let status = command
@@ -364,9 +427,9 @@ pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Resu
                 let mut tar = super::process::quiet_command(archive_extractor());
                 let status = tar
                     .arg("-xzf")
-                    .arg(staging.join(nested))
+                    .arg(root.join(nested))
                     .arg("-C")
-                    .arg(&staging)
+                    .arg(root)
                     .status()?;
                 if !status.success() {
                     return Err(AppError::other(format!(
@@ -380,7 +443,7 @@ pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Resu
                 "{tool} archive did not contain {entry}"
             )));
         }
-        make_executable(&candidate)?;
+        make_executable(&candidate).map_err(|error| describe("prepare", error))?;
         // Exercise the executable and its bundled libraries before activation.
         // The timeout also bounds fresh-file antivirus checks on desktop OSes.
         let mut command = super::process::quiet_command(&candidate);
@@ -398,16 +461,6 @@ pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Resu
                 "{tool} version check failed; previous installation preserved"
             )));
         }
-        let root = super::managed::root(data_dir, tool, spec.sha256);
-        if !root.exists() {
-            if let Err(error) = std::fs::rename(&staging, &root) {
-                // A concurrent installer can publish this immutable digest
-                // first. Its root was also smoke-tested before the rename.
-                if !root.join(&entry).is_file() {
-                    return Err(error.into());
-                }
-            }
-        }
         super::managed::activate(
             data_dir,
             tool,
@@ -420,7 +473,6 @@ pub async fn ensure(http: &reqwest::Client, data_dir: &Path, tool: &str) -> Resu
     }
     .await;
     let _ = std::fs::remove_file(&archive);
-    let _ = std::fs::remove_dir_all(&staging);
     result
 }
 
@@ -540,6 +592,35 @@ mod tests {
             assert_eq!(std::fs::read(&target).unwrap(), b"legacy tool");
             assert!(!is_current(&data, "yt-dlp"));
         }
+        std::fs::remove_dir_all(data).unwrap();
+    }
+
+    #[test]
+    fn a_leftover_install_directory_is_replaced_not_reused() {
+        let data = scratch("fresh-root");
+        let root = super::super::managed::root(&data, "mpv", &"c".repeat(64));
+        std::fs::create_dir_all(root.join("stale")).unwrap();
+        std::fs::write(root.join("stale").join("mpv.exe"), b"old").unwrap();
+        fresh_directory(&root).unwrap();
+        assert!(root.is_dir());
+        assert!(!root.join("stale").exists());
+        std::fs::remove_dir_all(data).unwrap();
+    }
+
+    #[test]
+    fn stale_staging_from_an_interrupted_install_is_discarded() {
+        let data = scratch("stale-staging");
+        let bin = install_dir(&data);
+        std::fs::create_dir_all(bin.join(".mpv-1234.part")).unwrap();
+        std::fs::write(bin.join(".mpv-1234.part").join("mpv.exe"), b"partial").unwrap();
+        std::fs::write(bin.join(".mpv-5678.archive"), b"archive").unwrap();
+        std::fs::create_dir_all(bin.join("mpv-keep")).unwrap();
+        std::fs::create_dir_all(bin.join(".yt-dlp-1234.part")).unwrap();
+        discard_stale_attempts(&bin, "mpv");
+        assert!(!bin.join(".mpv-1234.part").exists());
+        assert!(!bin.join(".mpv-5678.archive").exists());
+        assert!(bin.join("mpv-keep").is_dir());
+        assert!(bin.join(".yt-dlp-1234.part").is_dir());
         std::fs::remove_dir_all(data).unwrap();
     }
 
