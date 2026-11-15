@@ -83,7 +83,7 @@ async fn catalog(session: &Session) -> anyhow::Result<(String, plugins::Marketpl
     } else {
         configured
     };
-    let http = reqwest::Client::builder()
+    let http = lilo_core::http::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()?;
     let index = marketplace::fetch_index(&http, &source).await?;
@@ -273,7 +273,7 @@ pub async fn execute(session: &mut Session, operation: Operation) -> anyhow::Res
                 bail!("Plugin is not compatible with the daemon.");
             }
             session.stop_plugin(&id).await;
-            let http = reqwest::Client::builder()
+            let http = lilo_core::http::builder()
                 .timeout(std::time::Duration::from_secs(60))
                 .build()?;
             let installed = marketplace::install(&http, &source, entry, &root).await;

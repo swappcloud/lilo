@@ -12,6 +12,7 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 reqwest.workspace = true
+rustls.workspace = true
 tokio.workspace = true
 sha2.workspace = true
 uuid.workspace = true
@@ -37,4 +38,4 @@ windows = { workspace = true, features = [
   "Win32_System_Console",
   "Win32_Security",
 ] }
-jpeg-encoder = "0.6"
+jpeg-encoder = "0.7.1"

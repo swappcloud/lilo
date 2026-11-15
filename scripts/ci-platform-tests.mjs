@@ -11,6 +11,7 @@ const windowsPatterns = [
   /(^|\/)windows\.rs$/,
   /^scripts\/(build|toolchains|release-test|release-privacy)\.(mjs|test\.mjs)$/,
   /^crates\/lilo-core\/src\/plugins\/http\.rs$/,
+  /^crates\/lilo-core\/src\/media\/(provision\.rs|downloads\.json)$/,
 ];
 
 const macosPatterns = [
@@ -22,6 +23,7 @@ const macosPatterns = [
   /(^|\/)macos\.rs$/,
   /^scripts\/(build-wake|prepare-release|release-test)\.(sh|mjs)$/,
   /^crates\/lilo-core\/src\/plugins\/http\.rs$/,
+  /^crates\/lilo-core\/src\/media\/(provision\.rs|downloads\.json)$/,
 ];
 
 export function selectPlatformTests(paths) {

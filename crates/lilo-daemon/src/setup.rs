@@ -568,7 +568,7 @@ mod tests {
             settings,
             wifi,
             accounts,
-            reqwest::Client::new(),
+            lilo_core::http::client(),
             "lilo-test".to_string(),
         )
         .await
@@ -586,7 +586,7 @@ mod tests {
         Inner {
             wifi,
             accounts: AccountStore::load(dir.join("accounts.json")),
-            http: reqwest::Client::new(),
+            http: lilo_core::http::client(),
             user_agent: "lilo-test".to_string(),
             handle: tokio::runtime::Handle::current(),
             online: false,
@@ -638,7 +638,7 @@ mod tests {
     async fn the_page_scan_and_status_answer() {
         let (setup, _wifi) = setup_for_test().await;
         let base = loopback(&setup);
-        let client = reqwest::Client::new();
+        let client = lilo_core::http::client();
 
         let page = client
             .get(&base)
@@ -694,7 +694,7 @@ mod tests {
     async fn a_network_that_cannot_be_joined_comes_back_as_an_error_not_a_500() {
         let (setup, _wifi) = setup_for_test().await;
         let base = loopback(&setup);
-        let client = reqwest::Client::new();
+        let client = lilo_core::http::client();
         let reply: serde_json::Value = client
             .post(format!("{base}/api/wifi"))
             .json(&serde_json::json!({ "ssid": "rede-que-nao-existe", "password": "x" }))
@@ -713,7 +713,7 @@ mod tests {
     async fn a_pasted_session_is_stored_and_ends_setup() {
         let (setup, wifi) = setup_for_test().await;
         let base = loopback(&setup);
-        let client = reqwest::Client::new();
+        let client = lilo_core::http::client();
         wifi.connect("casa", "segredo").unwrap();
 
         // The shape the page asks for: the JSON of /api/auth/session.
@@ -750,7 +750,7 @@ mod tests {
     async fn garbage_in_the_account_field_is_refused() {
         let (setup, _wifi) = setup_for_test().await;
         let base = loopback(&setup);
-        let client = reqwest::Client::new();
+        let client = lilo_core::http::client();
         let reply: serde_json::Value = client
             .post(format!("{base}/api/account"))
             .json(&serde_json::json!({ "session": "nada disso", "cookie": "" }))
@@ -916,7 +916,7 @@ mod tests {
     async fn the_scan_endpoint_surfaces_its_error() {
         let setup = setup_with(Arc::new(NoScan)).await;
         let base = loopback(&setup);
-        let body: serde_json::Value = reqwest::Client::new()
+        let body: serde_json::Value = lilo_core::http::client()
             .get(format!("{base}/api/scan"))
             .send()
             .await

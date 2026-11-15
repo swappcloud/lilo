@@ -300,7 +300,7 @@ impl Default for Gateway {
 
 impl Gateway {
     pub fn new() -> Self {
-        let http = reqwest::Client::builder()
+        let http = lilo_core::http::builder()
             .timeout(Duration::from_secs(90))
             .build()
             .unwrap_or_default();

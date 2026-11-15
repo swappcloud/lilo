@@ -276,31 +276,45 @@ candidate list, with a settings override. Spawning through
 `std::process::Command` needs **no** Tauri ACL entry — `capabilities/default.json`
 grants no `shell:*`, and `wake/macos.rs` already spawns this way.
 
-**Provisioning** (`provision.rs`). On supported targets, LILO downloads pinned
-tools that are missing into `<app data>/bin`. Linux mpv is supplied by the
-system or an explicit path because the project has no pinned Linux mpv package.
-Because downloads are later *executed*, the rules are strict:
+**Provisioning** (`provision.rs`, `managed.rs` and `downloads.json`). The shared
+catalog pins versions, platform availability, archive layout and SHA-256 digests
+for desktop and daemon. The release workflow retains every archive in the public
+`media-tools-v1` LILO release before building installers. Asset names contain
+the pinned digest; publication verifies public downloads and never overwrites or
+deletes retained files. Upstream release pruning cannot remove those copies.
 
-* exact versions and SHA-256 digests are **pinned in the source**, never read
-  from the server that served the file;
-* HTTPS only, and a digest mismatch deletes the file instead of running it;
-* downloads land in the app data directory, never on `PATH`, so nothing fetched
-  can shadow a system tool;
-* a managed binary wins over a system one — behaviour must not depend on the
-  user's `PATH` — but an explicit settings override beats both.
+Startup installs missing tools and upgrades LILO-managed tools to the app's
+validated pins. It tries the retained copy first, then the original HTTPS source,
+with the same pinned digest for both. A checksum mismatch fails closed. Downloads
+are staged under the app data directory, extracted with their bundle layout and
+run with `--version` before activation. Each digest has its own directory, so a
+running executable is never overwritten. An atomic installed-version record
+selects the new version only after verification; failures preserve the previous
+version and retry on the next launch. Legacy installations are migrated through
+the same process. Explicit configured paths and existing system tools remain
+user-managed; the app never changes global packages or the user's PATH.
 
-Coverage is deliberately honest. `spec_for` returns `None` where no trustworthy
-prebuilt exists, and the UI then shows the one command that installs it rather
-than pretending:
+The catalog follows stable releases. OS requirements take priority over blindly
+selecting the newest binary: official mpv 0.42 macOS bundles require macOS 15;
+earlier Apple Silicon systems retain the compatible 0.40 bundle. An unknown
+macOS version takes the conservative compatibility path. Linux mpv and older
+Intel macOS mpv use a system/configured binary because no qualified portable
+artifact is pinned for them.
 
-| Tool | Provisioned | Source |
+Before changing pins, run `node scripts/media-tools.mjs --verify`. PR CI checks
+changed pins for every platform. Native PR and release checks also install and
+run supported tools, including Deno; an installer cannot be published if its
+native media smoke test fails. The offline suite tests retention, checksum
+rejection, resumable publication, platform selection and safe activation.
+
+| Tool | Automatic platforms | Pinned upstream source |
 |---|---|---|
-| yt-dlp | macOS, Windows, Linux x86_64/aarch64 | official GitHub release + its `SHA2-256SUMS` |
-| yt-dlp | 32-bit ARM: no | no pinned automatic package; the HTTP resolver can be configured instead |
-| Deno | Windows x86_64, macOS x86_64/aarch64, Linux x86_64 | pinned release assets and digests |
-| mpv | macOS arm64 | stolendata build (self-contained `mpv.app`), digest pinned here |
-| mpv | Windows x86_64 | pinned Windows build and digest |
-| mpv | Linux and Intel macOS: no | use an available system binary or configured path; the runtime image includes system mpv |
+| yt-dlp | macOS x86_64/aarch64, Windows x86_64, Linux x86_64/aarch64 | Official stable GitHub release and asset metadata digest |
+| Deno | macOS x86_64/aarch64, Windows x86_64, Linux x86_64 | Official stable GitHub release and asset metadata digest |
+| mpv | Windows x86_64 | Official stable full-build zip and asset metadata digest |
+| mpv | macOS 15+ x86_64/aarch64 | Official stable bundled release and asset metadata digest |
+| mpv | Earlier macOS aarch64 | Compatible pinned stolendata bundle |
+| mpv | Linux and earlier Intel macOS | System/configured executable; the Linux runtime image includes system mpv |
 
 ## 7. Tools layer
 

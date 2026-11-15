@@ -195,7 +195,7 @@ pub async fn app_update_check(
         },
     );
     let check = async {
-        let http = reqwest::Client::builder()
+        let http = lilo_core::http::builder()
             .timeout(std::time::Duration::from_secs(20))
             .user_agent(concat!("LILO/", env!("CARGO_PKG_VERSION")))
             .build()?;
@@ -379,6 +379,7 @@ mod tests {
     #[test]
     fn test_release_manifest_includes_prereleases_and_skips_drafts() {
         let releases = json!([
+            { "tag_name": "media-tools-v1", "assets": [{ "name": "latest.json", "browser_download_url": "https://github.com/swappcloud/lilo/releases/download/media-tools-v1/latest.json" }] },
             { "draft": true, "tag_name": "0.3.0", "assets": [{ "name": "latest.json", "browser_download_url": "https://github.com/swappcloud/lilo/releases/download/0.3.0/latest.json" }] },
             { "draft": false, "prerelease": true, "tag_name": "0.2.0", "assets": [{ "name": "latest.json", "browser_download_url": "https://github.com/swappcloud/lilo/releases/download/0.2.0/latest.json" }] }
         ]);

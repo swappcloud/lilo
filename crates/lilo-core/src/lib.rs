@@ -20,4 +20,5 @@ pub mod weather;
 
 pub use error::{AppError, Result};
 pub mod commands;
+pub mod http;
 pub mod media;

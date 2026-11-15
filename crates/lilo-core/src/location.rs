@@ -481,7 +481,7 @@ mod tests {
     ) {
         let (bus, receiver) = EventBus::new();
         (
-            LocationPlugin::new(reqwest::Client::new(), bus.publisher(PLUGIN_ID)),
+            LocationPlugin::new(crate::http::client(), bus.publisher(PLUGIN_ID)),
             receiver,
         )
     }

@@ -45,7 +45,13 @@ impl ToolProvider for DaemonMediaProvider {
             if matches!(tool, "media_play" | "media_radio" | "media_search") {
                 let mut provisioned = self.provisioned.lock().await;
                 if !*provisioned {
-                    self.service.install_dependencies().await?;
+                    if self.service.install_dependencies().await.is_err() {
+                        crate::log::warn(
+                            "Media tool update failed; continuing with available tools.",
+                        );
+                    }
+                    // Retry on the next daemon launch or explicit install,
+                    // rather than blocking every command on the same download.
                     *provisioned = true;
                 }
             }
@@ -107,12 +113,43 @@ mod tests {
     use lilo_core::settings::MediaSettings;
 
     #[tokio::test]
+    async fn failed_tool_updates_do_not_block_media_dispatch_or_repeat_every_command() {
+        let data =
+            std::env::temp_dir().join(format!("lilo-daemon-update-{}", uuid::Uuid::new_v4()));
+        let previous = lilo_core::media::provision::managed_path(&data, "yt-dlp");
+        std::fs::create_dir_all(previous.parent().unwrap()).unwrap();
+        std::fs::write(&previous, b"previous tool").unwrap();
+        let http = lilo_core::http::builder()
+            .proxy(reqwest::Proxy::all("http://127.0.0.1:1").unwrap())
+            .build()
+            .unwrap();
+        let provider = DaemonMediaProvider::new(Arc::new(MediaService::new(
+            MediaSettings::default(),
+            http,
+            data.clone(),
+        )));
+        for _ in 0..2 {
+            let error = provider
+                .invoke("media_search", &serde_json::json!({}))
+                .await
+                .unwrap_err();
+            assert!(
+                error.to_string().contains("nothing to search for"),
+                "{error}"
+            );
+            assert!(*provider.provisioned.lock().await);
+            assert_eq!(std::fs::read(&previous).unwrap(), b"previous tool");
+        }
+        std::fs::remove_dir_all(data).unwrap();
+    }
+
+    #[tokio::test]
     async fn adapter_exposes_media_tools_and_status_without_playback_dependencies() {
         let data_dir =
             std::env::temp_dir().join(format!("lilo-daemon-media-{}", uuid::Uuid::new_v4()));
         let service = Arc::new(MediaService::new(
             MediaSettings::default(),
-            reqwest::Client::new(),
+            lilo_core::http::client(),
             data_dir.clone(),
         ));
         let provider = DaemonMediaProvider::new(service);

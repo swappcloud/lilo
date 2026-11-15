@@ -34,6 +34,14 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
+      - name: Verify changed media pins for all platforms
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if ! git diff --quiet "$BASE" "$HEAD" -- crates/lilo-core/src/media/downloads.json scripts/media-tools.mjs; then
+            node scripts/media-tools.mjs --verify
+          fi
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
@@ -45,7 +53,9 @@ jobs:
       - name: Check Rust formatting
         run: cargo fmt --all -- --check
       - name: Test Rust workspace
-        run: cargo test --workspace
+        run: cargo test --workspace --features lilo/native-audio
+      - name: Install and run pinned media tools
+        run: cargo test -p lilo-core really_installs_every_tool_this_platform_supports -- --ignored --nocapture
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-dist
@@ -84,6 +94,8 @@ jobs:
           path: dist/
       - name: Test Windows release profile
         run: node scripts/release-test.mjs x86_64-pc-windows-msvc
+      - name: Install and run Windows media tools
+        run: node scripts/media-smoke.mjs x86_64-pc-windows-msvc
       - name: Test Windows release privacy
         run: node --test scripts/release-privacy.test.mjs
 
@@ -120,3 +132,5 @@ jobs:
         run: node scripts/prepare-release.mjs --target x86_64-apple-darwin
       - name: Test Intel Mac release profile
         run: node scripts/release-test.mjs x86_64-apple-darwin
+      - name: Install and run Intel Mac media tools
+        run: node scripts/media-smoke.mjs x86_64-apple-darwin

@@ -79,7 +79,9 @@ updates its line here in the same change.
 | `media/player.rs` | mpv over JSON IPC, levels, watchdog |
 | `media/resolver.rs` | yt-dlp resolution |
 | `media/service.rs` | Shared media tools: search, selected-track playback, artwork, queue and volume |
-| `media/provision.rs` | Pinned mpv/yt-dlp/Deno downloads with SHA-256 |
+| `media/provision.rs` | Retained, verified media downloads and native executable checks |
+| `media/downloads.json` | Shared stable tool pins, archive layout and OS compatibility |
+| `media/managed.rs` | Versioned installations and atomic activation, preserving previous tools |
 | `media/process.rs` | Quiet media children, bounded output, Windows process-tree ownership |
 | `media/binaries.rs` | Locating binaries |
 | `plugins/mod.rs` | Plugin host facade |
@@ -374,3 +376,7 @@ Audio permission regression tests: `app/src/shared/hooks/useMediaDevices.test.ts
 - `src-tauri/src/wake/linux.rs` and `crates/lilo-daemon/src/wake.rs` — desktop event adapter and daemon wake lifecycle/idle activation.
 - `scripts/prepare-linux-wake.mjs` / `linux-wake.test.mjs` — Linux model/library packaging, AppImage dependency files and redistribution notices.
 - `app/src/lib/browserCrypto{,.test}.ts` — authenticated packets on HTTPS or trusted LAN HTTP, with WebCrypto and a noble AES-GCM fallback.
+
+- `crates/lilo-core/src/http.rs` owns shared ring TLS initialization for reqwest clients in desktop, daemon and plugins.
+- `scripts/media-tools.mjs` and its tests validate and retain pinned archives in the public LILO media release; `scripts/media-smoke.mjs` runs native release installation checks.
+- `.github/dependabot.yml` proposes weekly stable npm/Cargo upgrades through the same PR validation gates.

@@ -2195,7 +2195,7 @@ mod bundled_plugins_tests {
         );
         assert_eq!(sources.len(), 1);
         let index =
-            lilo_core::plugins::marketplace::fetch_index(&reqwest::Client::new(), &sources[0])
+            lilo_core::plugins::marketplace::fetch_index(&lilo_core::http::client(), &sources[0])
                 .await
                 .unwrap();
         assert!(index

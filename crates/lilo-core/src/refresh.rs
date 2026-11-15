@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn an_empty_cookie_is_refused_before_any_request() {
-        let http = reqwest::Client::new();
+        let http = crate::http::client();
         let error = tokio::runtime::Runtime::new()
             .unwrap()
             .block_on(fetch_session(&http, "  ", "test-agent"))

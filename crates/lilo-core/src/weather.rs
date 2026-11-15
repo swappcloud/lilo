@@ -1099,7 +1099,7 @@ mod tests {
 
     #[tokio::test]
     async fn a_mood_overrides_the_scene_until_the_real_weather_returns() {
-        let plugin = WeatherPlugin::new(reqwest::Client::new());
+        let plugin = WeatherPlugin::new(crate::http::client());
         let result = plugin
             .invoke("weather_mood", &json!({ "mood": "neve" }))
             .await
@@ -1115,7 +1115,7 @@ mod tests {
 
     #[tokio::test]
     async fn effects_off_draws_nothing_even_with_a_mood() {
-        let plugin = WeatherPlugin::new(reqwest::Client::new());
+        let plugin = WeatherPlugin::new(crate::http::client());
         plugin
             .configure(json!({ "city": "", "effects": false }))
             .await
@@ -1130,7 +1130,7 @@ mod tests {
 
     #[tokio::test]
     async fn it_follows_the_published_location_unless_a_city_is_typed() {
-        let plugin = WeatherPlugin::new(reqwest::Client::new());
+        let plugin = WeatherPlugin::new(crate::http::client());
         assert!(plugin.target().is_none());
         let event = crate::plugins::Event {
             topic: "location.changed".into(),
@@ -1156,7 +1156,7 @@ mod tests {
 
     #[test]
     fn its_commands_and_ui_are_valid() {
-        let plugin = WeatherPlugin::new(reqwest::Client::new());
+        let plugin = WeatherPlugin::new(crate::http::client());
         assert!(plugin.ui().validate().is_ok());
         let mut router = crate::commands::router::Router::new("lilo");
         router
@@ -1299,7 +1299,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "network"]
     async fn live_weather_for_a_real_city() {
-        let plugin = WeatherPlugin::new(reqwest::Client::new());
+        let plugin = WeatherPlugin::new(crate::http::client());
         plugin.configure(json!({ "city": "Zurich" })).await.unwrap();
         let now = plugin.invoke("weather_now", &json!({})).await.unwrap();
         eprintln!("{now}");
@@ -1321,7 +1321,7 @@ mod tests {
 
     #[tokio::test]
     async fn the_effect_setting_previews_a_scene() {
-        let plugin = WeatherPlugin::new(reqwest::Client::new());
+        let plugin = WeatherPlugin::new(crate::http::client());
         // Picking an effect is the same state a spoken mood sets.
         plugin.configure(json!({ "effect": "snow" })).await.unwrap();
         assert_eq!(plugin.current_scene().await.kind, SceneKind::Snow);

@@ -138,7 +138,7 @@ mod imp {
         let err_fn = |e| eprintln!("native audio stream error: {e}");
         device
             .build_input_stream(
-                config,
+                *config,
                 move |data: &[T], _: &cpal::InputCallbackInfo| {
                     let mut peak = 0.0f32;
                     let mut sum = 0.0f32;

@@ -5,14 +5,14 @@ version = "0.1.0"
 description = "Independent desktop interface with embedded web browsing for realtime voice services using your own accounts"
 authors = ["LILO"]
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 
 [lib]
 name = "lilo_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.7.4", features = [] }
 
 [features]
 default = []
@@ -23,12 +23,12 @@ native-audio = ["dep:cpal"]
 [dependencies]
 lilo-core = { path = "../crates/lilo-core" }
 
-tauri = { version = "~2.12.1", features = ["macos-private-api", "tray-icon", "image-png"] }
-tauri-plugin-opener = "2"
-tauri-plugin-shell = "2"
-tauri-plugin-updater = "2"
-tauri-plugin-dialog = "2"
-semver = "1"
+tauri = { version = "2.12.5", features = ["macos-private-api", "tray-icon", "image-png"] }
+tauri-plugin-opener = "2.7.3"
+tauri-plugin-shell = "2.6.0"
+tauri-plugin-updater = "2.14.1"
+tauri-plugin-dialog = "2.8.4"
+semver = "1.0.28"
 
 serde.workspace = true
 serde_json.workspace = true
@@ -38,17 +38,17 @@ tokio.workspace = true
 reqwest.workspace = true
 uuid.workspace = true
 dirs.workspace = true
-tiny_http = "0.12"
-local-ip-address = "0.6"
-qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+tiny_http = "0.12.0"
+local-ip-address = "0.6.13"
+qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
 chrono.workspace = true
 base64.workspace = true
 sha2.workspace = true
 iana-time-zone.workspace = true
-cpal = { version = "0.15", optional = true }
+cpal = { version = "0.18.2", optional = true }
 # Tauri/wry report window and webview failures through `log`; LILO bridges it
 # into lilo.log so a swallowed creation error is still visible.
-log = { version = "0.4", features = ["std"] }
+log = { version = "0.4.35", features = ["std"] }
 
 # Windows wake engine: WinRT SpeechRecognizer with a phrase list constraint
 # (WebView2 ships no speech service, so the in-page recognizer cannot work).
@@ -69,6 +69,6 @@ windows-collections.workspace = true
 # Tauri applies the panel's material on macOS but cannot take it off again
 # (`set_effects(None)` is Windows-only); this is the crate it uses to add it.
 [target.'cfg(target_os = "macos")'.dependencies]
-window-vibrancy = "0.6"
+window-vibrancy = "0.8.1"
 # The cloaked sign-in window (`providers/cloak.rs`): alpha, click-through.
-objc2 = "0.6"
+objc2 = "0.6.5"

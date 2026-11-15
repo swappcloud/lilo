@@ -36,7 +36,10 @@ impl App {
     fn new(name: impl Into<String>, path: impl Into<PathBuf>) -> Self {
         let name = name.into();
         let path = path.into();
-        let id = format!("{:x}", Sha256::digest(path.to_string_lossy().as_bytes()));
+        let id: String = Sha256::digest(path.to_string_lossy().as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
         Self {
             id,
             aliases: aliases::for_name(&name),

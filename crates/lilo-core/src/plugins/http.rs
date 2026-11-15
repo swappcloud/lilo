@@ -152,7 +152,7 @@ pub(crate) fn request(permissions: &[String], input: &str, value: Value) -> Resu
 
 async fn send(permissions: &[String], mut url: Url, options: Options) -> Result<Response> {
     // No browser account, inherited proxy credentials, cookie jar or implicit redirects.
-    let client = reqwest::Client::builder()
+    let client = crate::http::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .build()

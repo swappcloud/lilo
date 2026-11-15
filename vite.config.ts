@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import babel from "@rolldown/plugin-babel";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -10,11 +11,8 @@ export default defineConfig({
   root: "app",
   publicDir: "app/public",
   plugins: [
-    react({
-      babel: {
-        plugins: [["babel-plugin-react-compiler", { target: "19" }]],
-      },
-    }),
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
   ],
   clearScreen: false,
   server: {
@@ -34,7 +32,7 @@ export default defineConfig({
     emptyOutDir: true,
     target:
       process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
-    minify: process.env.TAURI_ENV_DEBUG ? false : "esbuild",
+    minify: process.env.TAURI_ENV_DEBUG ? false : "oxc",
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
     rollupOptions: {
       output: {

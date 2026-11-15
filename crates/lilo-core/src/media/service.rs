@@ -380,8 +380,7 @@ impl MediaService {
         super::player::reap_orphans()
     }
 
-    /// Download whatever is missing and can be fetched here. Safe to call on
-    /// every start: installed tools short-circuit.
+    /// Install missing tools and update managed tools to this app's pinned versions.
     pub async fn install_dependencies(&self) -> Result<Vec<ToolStatus>> {
         self.install_dependencies_with(|_| {}).await
     }
@@ -400,7 +399,10 @@ impl MediaService {
             ("yt-dlp", settings.yt_dlp_path.as_str()),
             ("deno", ""),
         ] {
-            if resolve_tool(&self.data_dir, tool, override_path).is_some() {
+            if !override_path.trim().is_empty() {
+                continue; // Explicit user-managed paths are never replaced.
+            }
+            if provision::is_current(&self.data_dir, tool) {
                 continue;
             }
             if provision::spec_for(tool).is_none() {
@@ -850,7 +852,7 @@ mod tests {
     fn service() -> MediaService {
         MediaService::new(
             MediaSettings::default(),
-            reqwest::Client::new(),
+            crate::http::client(),
             std::env::temp_dir().join(format!("lilo-media-{}", uuid::Uuid::new_v4())),
         )
     }
@@ -978,7 +980,7 @@ mod tests {
                 yt_dlp_path: "/definitely/not/yt-dlp".into(),
                 ..MediaSettings::default()
             },
-            reqwest::Client::new(),
+            crate::http::client(),
             std::env::temp_dir().join(format!("lilo-noinstall-{}", uuid::Uuid::new_v4())),
         );
         let report = service.report().await.unwrap();
@@ -1000,7 +1002,7 @@ mod tests {
                 mpv_path: "/definitely/not/mpv".into(),
                 ..MediaSettings::default()
             },
-            reqwest::Client::new(),
+            crate::http::client(),
             std::env::temp_dir().join(format!("lilo-media-{}", uuid::Uuid::new_v4())),
         );
         let err = service
@@ -1127,7 +1129,7 @@ mod tests {
                 volume: 0,
                 ..MediaSettings::default()
             },
-            reqwest::Client::new(),
+            crate::http::client(),
             data.clone(),
         );
 
