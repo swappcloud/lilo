@@ -71,9 +71,13 @@ configured before the first signed release is built.
 Every app release first retains the archives in `crates/lilo-core/src/media/downloads.json`
 under the public `media-tools-v1` release. Keep this release and all its assets:
 distributed apps depend on those content-addressed files. The publisher verifies
-SHA-256 before upload and checks the public copy afterward. Uploads are resumable
-and never use `--clobber`. A missing or corrupted retained file blocks publication.
-The non-semantic archive tag is ignored by the app updater and release planner.
+SHA-256 before upload and checks the public copy afterward. GitHub serves a fresh
+asset only after it propagates, so the publisher uploads every missing archive
+first and then waits for each public copy, up to five minutes per file; a slow
+mirror never fails an otherwise valid release, while a missing or corrupted
+retained file still blocks publication. Uploads are resumable and never use
+`--clobber`. The non-semantic archive tag is ignored by the app updater and
+release planner.
 
 Use `node scripts/media-tools.mjs --verify` when changing a pin. Select stable
 upstream releases and take hashes from independent release asset metadata, not
