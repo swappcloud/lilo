@@ -194,7 +194,7 @@ fn listen(app: &AppHandle, phrase: &str, stop: &AtomicBool) -> Result<(), Engine
         })?;
     let compiled = recognizer
         .CompileConstraintsAsync()
-        .and_then(|op| op.get())
+        .and_then(|op| op.join())
         .map_err(|e| {
             EngineError::new(
                 "recognizer-error",
@@ -238,7 +238,7 @@ fn listen(app: &AppHandle, phrase: &str, stop: &AtomicBool) -> Result<(), Engine
     let _ = app.emit(BLOCKED_EVENT, serde_json::Value::Null);
 
     while !stop.load(Ordering::Relaxed) {
-        if let Err(e) = session.StartAsync().and_then(|op| op.get()) {
+        if let Err(e) = session.StartAsync().and_then(|op| op.join()) {
             return Err(EngineError::new(
                 "recognizer-error",
                 format!("session start failed: {e}"),
@@ -246,7 +246,7 @@ fn listen(app: &AppHandle, phrase: &str, stop: &AtomicBool) -> Result<(), Engine
         }
         loop {
             if stop.load(Ordering::Relaxed) {
-                let _ = session.StopAsync().and_then(|op| op.get());
+                let _ = session.StopAsync().and_then(|op| op.join());
                 return Ok(());
             }
             match rx.recv_timeout(Duration::from_millis(200)) {

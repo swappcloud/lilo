@@ -281,6 +281,9 @@ mod tests {
             while Instant::now() < until {
                 match listener.accept() {
                     Ok((mut stream, _)) => {
+                        // macOS can inherit nonblocking mode from the listener;
+                        // wait for the complete request before replying.
+                        stream.set_nonblocking(false).unwrap();
                         stream
                             .set_read_timeout(Some(Duration::from_secs(1)))
                             .unwrap();
