@@ -3,8 +3,8 @@
 //! Rules, because this downloads and then *executes* code:
 //!   * exact versions and SHA-256 digests are pinned in this file — never taken
 //!     from the server that served the download;
-//!   * release builds retain every pinned archive in the LILO media release;
-//!     upstream mirrors may remove old builds without breaking installed apps;
+//!   * media tools are external dependencies: downloads come from their own
+//!     upstream release, never from a copy hosted in this repository;
 //!   * HTTPS only;
 //!   * a file whose digest does not match is deleted, never run;
 //!   * everything lands under the app data directory, not on `PATH`.
@@ -42,7 +42,6 @@ pub struct ToolSpec {
     pub name: &'static str,
     pub version: &'static str,
     pub url: &'static str,
-    pub mirror_url: String,
     /// SHA-256 of the downloaded file, verified before anything is executed.
     pub sha256: &'static str,
     pub payload: Payload,
@@ -50,7 +49,6 @@ pub struct ToolSpec {
 
 #[derive(Deserialize)]
 struct DownloadCatalog<'a> {
-    mirror: &'a str,
     #[serde(borrow)]
     tools: Vec<DownloadSpec<'a>>,
 }
@@ -145,68 +143,47 @@ fn spec_for_platform(tool: &str, os: &str, arch: &str, macos: Option<u32>) -> Op
         },
         _ => panic!("unsupported media archive format"),
     };
-    let extension = if spec.format == "executable" {
-        "bin"
-    } else {
-        spec.format
-    };
     Some(ToolSpec {
         name: spec.name,
         version: spec.version,
         url: spec.url,
-        mirror_url: format!(
-            "{}/{}-{}.{}",
-            catalog.mirror, spec.name, spec.sha256, extension
-        ),
         sha256: spec.sha256,
         payload,
     })
 }
 
-/// Prefer our retained copy so removing an upstream release cannot strand apps.
-/// Both sources use the same source-pinned digest; a mismatch fails closed.
+/// Download the pinned upstream archive. Media tools are external dependencies:
+/// the app never hosts copies, it pins the exact upstream release and digest.
 async fn download_verified(http: &reqwest::Client, spec: &ToolSpec) -> Result<Vec<u8>> {
-    let mut last_error = String::new();
-    for url in [spec.mirror_url.as_str(), spec.url] {
-        if !url.starts_with("https://") {
-            return Err(AppError::other("refusing a non-HTTPS download"));
-        }
-        let response = match http
-            .get(url)
-            .timeout(std::time::Duration::from_secs(180))
-            .send()
-            .await
-            .and_then(reqwest::Response::error_for_status)
-        {
-            Ok(response) => response,
-            Err(error) => {
-                last_error = error.to_string();
-                continue;
-            }
-        };
-        if response.url().scheme() != "https" {
-            return Err(AppError::other("refusing a non-HTTPS download redirect"));
-        }
-        let bytes = match response.bytes().await {
-            Ok(bytes) => bytes,
-            Err(error) => {
-                last_error = error.to_string();
-                continue;
-            }
-        };
-        let actual = sha256_hex(&bytes);
-        if actual != spec.sha256 {
-            return Err(AppError::other(format!(
-                "{} {} failed its checksum — refusing to run it (expected {}, got {actual})",
-                spec.name, spec.version, spec.sha256
-            )));
-        }
-        return Ok(bytes.to_vec());
+    let url = spec.url;
+    if !url.starts_with("https://") {
+        return Err(AppError::other("refusing a non-HTTPS download"));
     }
-    Err(AppError::other(format!(
-        "{} {} could not be downloaded from either verified source: {last_error}",
-        spec.name, spec.version
-    )))
+    let unavailable = |error: reqwest::Error| {
+        AppError::other(format!(
+            "{} {} could not be downloaded from its pinned source: {error}",
+            spec.name, spec.version
+        ))
+    };
+    let response = http
+        .get(url)
+        .timeout(std::time::Duration::from_secs(180))
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(unavailable)?;
+    if response.url().scheme() != "https" {
+        return Err(AppError::other("refusing a non-HTTPS download redirect"));
+    }
+    let bytes = response.bytes().await.map_err(unavailable)?;
+    let actual = sha256_hex(&bytes);
+    if actual != spec.sha256 {
+        return Err(AppError::other(format!(
+            "{} {} failed its checksum — refusing to run it (expected {}, got {actual})",
+            spec.name, spec.version, spec.sha256
+        )));
+    }
+    Ok(bytes.to_vec())
 }
 
 /// The extractor for zip/7z archives. On Windows the bare name `tar` may
@@ -612,7 +589,7 @@ mod tests {
     }
 
     #[test]
-    fn every_platform_uses_a_retained_content_addressed_archive() {
+    fn every_platform_uses_a_pinned_upstream_archive() {
         for spec in &catalog().tools {
             for target in &spec.targets {
                 let (os, arch) = target.split_once('-').unwrap();
@@ -620,9 +597,11 @@ mod tests {
                 assert_eq!(selected.version, spec.version);
                 assert_eq!(selected.sha256, spec.sha256);
                 assert_eq!(selected.url, spec.url);
-                assert!(selected.mirror_url.starts_with(catalog().mirror));
-                assert!(selected.mirror_url.contains(spec.sha256));
-                assert_ne!(selected.mirror_url, selected.url);
+                assert!(selected.url.starts_with("https://"));
+                assert!(
+                    !selected.url.contains("swappcloud"),
+                    "media tools must not be hosted in this repository"
+                );
             }
         }
         assert!(spec_for_target("mpv", "linux", "aarch64").is_none());

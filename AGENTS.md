@@ -133,7 +133,9 @@ to every task unless the user explicitly overrides them.
   Linux uses a system/configured mpv because no pinned Linux mpv package is
   provided. Never ask the user to install a tool by hand where a spec exists;
   never take a digest from the download server. Adding a platform needs a real
-  artifact and digest.
+  artifact and digest. Media tools are external dependencies, installed from
+  their own upstream release like a package manager installs a pinned package:
+  never rehost their binaries in this repository's releases or tags.
 - Resource budget for anything in `lilo-core`: no heavyweight crates (no
   `regex`, no unicode-normalization), matching stays O(n) per caption, mpv runs
   with a bounded cache.

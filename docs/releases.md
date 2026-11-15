@@ -66,18 +66,15 @@ the environment. Generate a key with `npm exec tauri signer generate`; keep
 it outside the checkout. GitHub Actions must have the corresponding secret
 configured before the first signed release is built.
 
-### Retained media dependencies
+### Pinned media dependencies
 
-Every app release first retains the archives in `crates/lilo-core/src/media/downloads.json`
-under the public `media-tools-v1` release. Keep this release and all its assets:
-distributed apps depend on those content-addressed files. The publisher verifies
-SHA-256 before upload and checks the public copy afterward. GitHub serves a fresh
-asset only after it propagates, so the publisher uploads every missing archive
-first and then waits for each public copy, up to five minutes per file; a slow
-mirror never fails an otherwise valid release, while a missing or corrupted
-retained file still blocks publication. Uploads are resumable and never use
-`--clobber`. The non-semantic archive tag is ignored by the app updater and
-release planner.
+Media tools are external dependencies. `crates/lilo-core/src/media/downloads.json`
+pins their exact upstream release URL, platform coverage and SHA-256 digest, the
+way a package manifest pins a package version and its integrity hash. LILO does
+not rehost those binaries in this repository, so the releases here stay app
+versions only. A moved or deleted upstream release is reported as unavailable and
+the previously installed tool keeps working until a pin is updated; a digest
+mismatch fails closed and blocks installation.
 
 Use `node scripts/media-tools.mjs --verify` when changing a pin. Select stable
 upstream releases and take hashes from independent release asset metadata, not

@@ -1,5 +1,4 @@
 {
-  "mirror": "https://github.com/swappcloud/lilo/releases/download/media-tools-v1",
   "tools": [
     {
       "name": "mpv",

@@ -7,8 +7,8 @@ import { UPDATE_TARGETS } from "./update-artifacts.mjs";
 
 const sha = "a".repeat(40);
 
-test("retained media release is not an app version", () => {
-  const archive = { tag_name: "media-tools-v1", target_commitish: sha, assets: [] };
+test("a non-version tag is not an app version", () => {
+  const archive = { tag_name: "docs-snapshot", target_commitish: sha, assets: [] };
   assert.equal(nightlyPlan("0.1.2", sha, [archive]).tag, "0.1.2");
 });
 test("release builds cannot inherit a personal Apple signing or notarization identity", () => {
@@ -86,10 +86,10 @@ test("workflow publishes on main, supports scheduled and manual retries", async 
   assert.doesNotMatch(workflow, /run: npm test/);
   assert.doesNotMatch(workflow, /run: npm run typecheck/);
   assert.doesNotMatch(workflow, /run: cargo test --workspace\s*$/m);
-  assert.match(workflow, /build:\s*\n\s*needs: \[plan, frontend, media\]/);
-  assert.match(workflow, /node scripts\/media-tools\.mjs --publish/);
+  assert.match(workflow, /build:\s*\n\s*needs: \[plan, frontend\]/);
+  assert.doesNotMatch(workflow, /media-tools|--publish/);
   assert.match(workflow, /fail-fast: false/);
-  assert.match(workflow, /needs\.frontend\.result == 'success' && needs\.media\.result == 'success' && \(needs\.build\.result == 'success' \|\| needs\.build\.result == 'failure'\)/);
+  assert.match(workflow, /needs\.frontend\.result == 'success' && \(needs\.build\.result == 'success' \|\| needs\.build\.result == 'failure'\)/);
   assert.match(workflow, /Check updater signing configuration/);
 });
 
