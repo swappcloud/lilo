@@ -6,6 +6,12 @@ Describe changes under **Unreleased** as they land. Version-specific notes are u
 
 ### Fixed
 
+- Install Windows media tools into their final content-addressed directory instead of renaming a directory that still holds the just-checked executable; Windows briefly locks that file and rejected the rename with "Access is denied", which left mpv missing after the 0.1.2 update.
+
+## [0.1.2] - 2026-11-15
+
+### Fixed
+
 - Pin exact media tool releases with SHA-256 digests so a moved upstream link cannot break installation; the tools remain external dependencies and are never rehosted here.
 - Upgrade app-managed media tools safely after app updates, preserving the previous executable on failure.
 
